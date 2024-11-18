@@ -33,3 +33,35 @@ yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran i
 	2.	Panggilan: Mulai panggilan suara atau video dengan pengguna lain.
 	3.	Pesan: Kirim pesan teks secara real-time.
 	4.	Notifikasi: Dapatkan notifikasi untuk pesan dan panggilan masuk.
+
+# **To-Do List dan Progress**
+**Setup Awal Proyek**
+1. [ ] Membuat struktur folder dan file proyek
+2. [ ] Inisialisasi proyek Flutter
+3. [ ] Pembuatan logo aplikasi
+4. [ ] Membuat color palette dan theme aplikasi
+5. [ ] Desain mockup UI aplikasi
+
+**Mulai Tahapan Dasar**
+1. [ ] Implementasi desain UI halaman beranda
+2. [ ] Menambahkan navigasi ke halaman lain
+3. [ ] Integrasi Firebase Authentication
+4. [ ] Menambahkan validasi form login dan registrasi
+5. [ ] Menambahkan fitur login dengan Google/Email
+6. [ ] Implementasi fitur voice call menggunakan API
+7. [ ] Desain UI untuk layar menelpon
+8. [ ] Penanganan error saat menelpon gagal
+
+**Fitur Tambahan**
+1. [ ] Membuat layar SplashScreen
+2. [ ] Menambahkan animasi transisi antara halaman
+3. [ ] Membuat halaman pengaturan
+4. [ ] Konfigurasi database Firebase untuk penyimpanan data pengguna
+5. [ ] Integrasi cloud functions jika diperlukan
+
+**Tahap Akhir**
+1. [ ] Testing dan Debugging
+2. [ ] Testing unit pada tiap fitur
+3. [ ] Debugging dan optimalisasi performa
+4. [ ] Optimasi ukuran APK/AAB
+5. [ ] Testing di berbagai perangkat
