@@ -53,8 +53,8 @@ yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran i
 8. [ ] Penanganan error saat menelpon gagal
 
 **Fitur Tambahan**
-1. [ ] Membuat layar SplashScreen
-2. [ ] Menambahkan animasi transisi antara halaman
+1. [✅] Membuat layar SplashScreen
+2. [✅] Menambahkan animasi transisi antara halaman
 3. [ ] Membuat halaman pengaturan
 4. [ ] Konfigurasi database Firebase untuk penyimpanan data pengguna
 5. [ ] Integrasi cloud functions jika diperlukan
