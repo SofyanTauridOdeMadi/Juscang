@@ -36,7 +36,6 @@ class _LayarMenelponState extends State<LayarMenelpon>
   bool _sudahTerhubung = false;
   bool _suaraDibisukan = false;
   bool _videoAktif = false;
-  late String _idPanggilan;
   late String _idSaluran;
   final AudioPlayer _pemutarAudio = AudioPlayer();
   late Timer _penghitungDurasi;
