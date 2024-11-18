@@ -1,6 +1,6 @@
 # **Juscang**
 
-JUscang adalah aplikasi komunikasi antar perangkat yang memungkinkan pengguna untuk berkomunikasi
+Juscang adalah aplikasi komunikasi antar perangkat yang memungkinkan pengguna untuk berkomunikasi
 secara efisien menggunakan teknologi real-time. Aplikasi ini mendukung berbagai fitur komunikasi
 yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran informasi antar perangkat.
 
@@ -13,11 +13,11 @@ yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran i
 	•	Pengelolaan Profil: Pengguna dapat mengatur nama, status, dan avatar.
 
 # **Teknologi yang Digunakan**
-	•	Flutter: Framework untuk membuat aplikasi lintas platform (iOS, Android, Web).
+	•	Flutter: Framework untuk membuat aplikasi lintas platform (iOS & Android).
 	•	Firebase:
-	•	Firebase Authentication: Untuk login dan registrasi pengguna.
-	•	Firebase Realtime Database: Menyimpan data pengguna, pesan, dan riwayat panggilan secara real-time.
-	•	Firebase Cloud Messaging (FCM): Untuk mengirim notifikasi push ke pengguna.
+	    Firebase Authentication: Untuk login dan registrasi pengguna.
+	    Firebase Realtime Database: Menyimpan data pengguna, pesan, dan riwayat panggilan secara real-time.
+	    Firebase Cloud Messaging (FCM): Untuk mengirim notifikasi push ke pengguna.
 	•	Agora SDK: Untuk panggilan suara dan video berkualitas tinggi.
 	•	CocoaPods: Manajer dependensi untuk integrasi iOS.
 
@@ -25,7 +25,6 @@ yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran i
 	•	lib: Berisi kode sumber aplikasi, termasuk UI, logika bisnis, dan layanan backend.
 	•	android: Konfigurasi proyek Android.
 	•	ios: Konfigurasi proyek iOS.
-	•	web: Konfigurasi proyek web.
 	•	assets: Berisi gambar, ikon, dan file statis lainnya.
 	•	firebase-messaging-sw.js: Service worker untuk notifikasi push di web.
 

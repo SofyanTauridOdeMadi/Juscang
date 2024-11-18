@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "619063166915",
+    "firebase_url": "https://stom-juscang-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "stom-juscang",
+    "storage_bucket": "stom-juscang.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:619063166915:android:13ef99e232253afc9d1f76",
+        "android_client_info": {
+          "package_name": "stom.id.juscang"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "619063166915-l7f15dodap98iplaebs8nkcd1ik0qf9j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3U8E2a9tkl75i1wFacRBAv0KSFegaX7Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "619063166915-l7f15dodap98iplaebs8nkcd1ik0qf9j.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "619063166915-716hcs5kjv8lftgj6e836ekb1inp7372.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "juscang.id"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
