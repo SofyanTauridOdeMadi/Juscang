@@ -29,10 +29,10 @@ yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran i
 	•	firebase-messaging-sw.js: Service worker untuk notifikasi push di web.
 
 # **Penggunaan**
-	1.	Login atau Registrasi: Pengguna dapat login atau mendaftar menggunakan email atau akun sosial jika Firebase Authentication mendukung.
-	2.	Panggilan: Mulai panggilan suara atau video dengan pengguna lain.
-	3.	Pesan: Kirim pesan teks secara real-time.
-	4.	Notifikasi: Dapatkan notifikasi untuk pesan dan panggilan masuk.
+1. Login atau Registrasi: Pengguna dapat login atau mendaftar menggunakan email atau akun sosial jika Firebase Authentication mendukung.
+2. Panggilan: Mulai panggilan suara atau video dengan pengguna lain.
+3. Pesan: Kirim pesan teks secara real-time.
+4. Notifikasi: Dapatkan notifikasi untuk pesan dan panggilan masuk.
 
 # **To-Do List dan Progress**
 **Setup Awal Proyek**
