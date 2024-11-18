@@ -36,30 +36,30 @@ yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran i
 
 # **To-Do List dan Progress**
 **Setup Awal Proyek**
-1. [✔] Membuat struktur folder dan file proyek
-2. [✔] Inisialisasi proyek Flutter
-3. [✔] Pembuatan logo aplikasi
-4. [✔] Membuat color palette dan theme aplikasi
-5. [✔] Desain mockup UI aplikasi
+[✔] Membuat struktur folder dan file proyek
+[✔] Inisialisasi proyek Flutter
+[✔] Pembuatan logo aplikasi
+[✔] Membuat color palette dan theme aplikasi
+[✔] Desain mockup UI aplikasi
 
 **Mulai Tahapan Dasar**
-1. [✔] Implementasi desain UI halaman beranda
-2. [✔] Menambahkan navigasi ke halaman lain
-3. [✔] Integrasi Firebase Authentication
-4. [✔] Menambahkan validasi form login dan registrasi
-5. [ ] Implementasi fitur voice call menggunakan API
-6. [✔] Desain UI untuk layar menelpon
-7. [ ] Penanganan error saat menelpon gagal
+[✔] Implementasi desain UI halaman beranda
+[✔] Menambahkan navigasi ke halaman lain
+[✔] Integrasi Firebase Authentication
+[✔] Menambahkan validasi form login dan registrasi
+[ ] Implementasi fitur voice call menggunakan API
+[✔] Desain UI untuk layar menelpon
+[ ] Penanganan error saat menelpon gagal
 
 **Fitur Tambahan**
-1. [✔] Membuat layar SplashScreen
-2. [✔] Menambahkan animasi transisi antara halaman
-3. [✔] Membuat halaman pengaturan
-4. [✔] Konfigurasi database Firebase untuk penyimpanan data pengguna
+[✔] Membuat layar SplashScreen
+[✔] Menambahkan animasi transisi antara halaman
+[✔] Membuat halaman pengaturan
+[✔] Konfigurasi database Firebase untuk penyimpanan data pengguna
 
 **Tahap Akhir**
-1. [ ] Testing dan Debugging
-2. [ ] Testing unit pada tiap fitur
-3. [ ] Debugging dan optimalisasi performa
-4. [ ] Optimasi ukuran APK/AAB
-5. [ ] Testing di berbagai perangkat
+[ ] Testing dan Debugging
+[ ] Testing unit pada tiap fitur
+[ ] Debugging dan optimalisasi performa
+[ ] Optimasi ukuran APK/AAB
+[ ] Testing di berbagai perangkat
