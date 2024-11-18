@@ -36,26 +36,26 @@ yang intuitif dan ramah pengguna, sehingga memudahkan interaksi dan pertukaran i
 
 # **To-Do List dan Progress**
 **Setup Awal Proyek**
-[✔] Membuat struktur folder dan file proyek
-[✔] Inisialisasi proyek Flutter
-[✔] Pembuatan logo aplikasi
-[✔] Membuat color palette dan theme aplikasi
-[✔] Desain mockup UI aplikasi
+[x] Membuat struktur folder dan file proyek
+[x] Inisialisasi proyek Flutter
+[x] Pembuatan logo aplikasi
+[x] Membuat color palette dan theme aplikasi
+[x] Desain mockup UI aplikasi
 
 **Mulai Tahapan Dasar**
-[✔] Implementasi desain UI halaman beranda
-[✔] Menambahkan navigasi ke halaman lain
-[✔] Integrasi Firebase Authentication
-[✔] Menambahkan validasi form login dan registrasi
+[x] Implementasi desain UI halaman beranda
+[x] Menambahkan navigasi ke halaman lain
+[x] Integrasi Firebase Authentication
+[x] Menambahkan validasi form login dan registrasi
 [ ] Implementasi fitur voice call menggunakan API
-[✔] Desain UI untuk layar menelpon
+[x] Desain UI untuk layar menelpon
 [ ] Penanganan error saat menelpon gagal
 
 **Fitur Tambahan**
-[✔] Membuat layar SplashScreen
-[✔] Menambahkan animasi transisi antara halaman
-[✔] Membuat halaman pengaturan
-[✔] Konfigurasi database Firebase untuk penyimpanan data pengguna
+[x] Membuat layar SplashScreen
+[x] Menambahkan animasi transisi antara halaman
+[x] Membuat halaman pengaturan
+[x] Konfigurasi database Firebase untuk penyimpanan data pengguna
 
 **Tahap Akhir**
 [ ] Testing dan Debugging
