@@ -523,7 +523,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
               )
                   : Center(
                 child: Text(
-                  'Tidak ada kontak ditemukan',
+                  'Tidak ada Pengguna ditemukan',
                   style: TextStyle(color: warnaTeksHitam.withOpacity(0.6)),
                 ),
               ),

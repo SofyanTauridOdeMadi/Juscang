@@ -108,7 +108,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   void _aturTimerTimeout() {
-    _timerTimeout = Timer(Duration(seconds: 15), () {
+    _timerTimeout = Timer(Duration(seconds: 20), () {
       if (!_penerimaBergabung) {
         _pemutarAudio.stop();
         _akhiriPanggilan("Panggilan tidak terjawab.");
@@ -198,11 +198,12 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
               children: [
                 CircleAvatar(
                   radius: 50,
+                  backgroundColor: warnaSekunder,
                   backgroundImage: widget.avatarPengguna != null
                       ? NetworkImage(widget.avatarPengguna!)
                       : AssetImage('assets/default_avatar.png') as ImageProvider,
                 ),
-                SizedBox(height: 16),
+                SizedBox(height: 18),
                 _pemanggilBergabung && _penerimaBergabung
                     ? Text(
                   'Durasi Panggilan: ${_formatDurasiPanggilan()}',
@@ -210,7 +211,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
                 )
                     : Text(
                   'Menunggu penerima bergabung...',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(fontSize: 20, color: Colors.grey),
                 ),
               ],
             ),
@@ -245,7 +246,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
                   },
                 ),
                 IconButton(
-                  icon: Icon(Icons.call_end, color: Colors.red),
+                  icon: Icon(Icons.call_end, color: warnaUtama),
                   onPressed: () => _akhiriPanggilan("Panggilan diakhiri."),
                 ),
               ],
