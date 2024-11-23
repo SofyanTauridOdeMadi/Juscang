@@ -16,12 +16,17 @@ class LayarMenelpon extends StatefulWidget {
   final String namaPengguna;
   final String? avatarPengguna;
 
+  final String idPemanggil;
+  final String idSaluran;
+
   const LayarMenelpon({
     Key? key,
     required this.idPengguna,
+    required this.idSaluran,
+    required this.idPemanggil,
     required this.idPenerima,
     required this.idPanggilan,
-    this.namaPengguna = '???',
+    required this.namaPengguna,
     this.avatarPengguna,
   }) : super(key: key);
 
@@ -36,7 +41,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   bool _penerimaBergabung = false; // Status penerima bergabung
   bool _suaraDibisukan = false; // Status suara dimatikan
   bool _kameraDimatikan = false; // Status kamera dimatikan
-  bool _kameraDepanAktif = true; // Status kamera depan/belakang
   late String _idSaluran;
   final AudioPlayer _pemutarAudio = AudioPlayer();
   Timer? _penghitungDurasi; // Timer untuk durasi panggilan
@@ -67,7 +71,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     const appId = '23a0ce9df3984ae08b9301627b3aed68';
     const token = "";
 
-    _idSaluran = "${widget.idPengguna}-${widget.idPenerima}";
+    _idSaluran = widget.idSaluran; // Gunakan idSaluran dari widget
 
     _mesinRTC = createAgoraRtcEngine();
     await _mesinRTC.initialize(const RtcEngineContext(appId: appId));

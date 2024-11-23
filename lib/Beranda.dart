@@ -26,15 +26,17 @@ class _LayarBerandaState extends State<LayarBeranda> {
   String? namaPengguna;
   String? avatarPengguna;
   String? statusPengguna;
+  String idSaluran = ''; // Atur nilai awal default
+  String idPemanggil = ''; // Atur nilai awal default
 
   Map<String, String> petaNamaPengguna = {}; // Menyimpan nama pengguna berdasarkan id
 
   @override
   void initState() {
     super.initState();
+    setupFirebaseMessaging(context);
     _mintaIzin();
     _inisialisasiNotifikasiFCM();
-    _pantauPanggilanMasuk();
     _ambilIdPengguna();
     _muatSemuaKontak();
   }
@@ -80,7 +82,104 @@ class _LayarBerandaState extends State<LayarBeranda> {
     });
   }
 
+  void perbaruiStatusPanggilan(
+      String idSaluran,
+      String idPemanggil,
+      String idPenerima, {
+        required String status,
+      }) {
+    final DatabaseReference database = FirebaseDatabase.instance.ref();
+
+    // Simpan riwayat panggilan pemanggil
+    database.child("pengguna/$idPemanggil/riwayatPanggilan/$idSaluran").set({
+      'idPenerima': idPenerima,
+      'status': status,
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
+
+    // Simpan riwayat panggilan penerima
+    database.child("pengguna/$idPenerima/riwayatPanggilan/$idSaluran").set({
+      'idPemanggil': idPemanggil,
+      'status': status,
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  void setupFirebaseMessaging(BuildContext context) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.data['jenisPesan'] == 'panggilan') {
+        // Notifikasi panggilan masuk
+        tampilkanDialogPanggilan(
+          context,
+          idSaluran: message.data['idSaluran'],
+          idPemanggil: message.data['idPemanggil'],
+          idPenerima: message.data['idPenerima'],
+        );
+      }
+    });
+  }
+
+  void tampilkanDialogPanggilan(
+      BuildContext context, {
+        required String idSaluran,
+        required String idPemanggil,
+        required String idPenerima,
+      }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Panggilan Masuk"),
+          content: Text("Anda menerima panggilan dari $idPemanggil"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // Tolak panggilan
+                perbaruiStatusPanggilan(
+                  idSaluran,
+                  idPemanggil,
+                  idPenerima,
+                  status: "ditolak",
+                );
+                Navigator.of(context).pop(); // Tutup dialog
+              },
+              child: Text("Tolak"),
+            ),
+            TextButton(
+              onPressed: () {
+                // Terima panggilan
+                perbaruiStatusPanggilan(
+                  idSaluran,
+                  idPemanggil,
+                  idPenerima,
+                  status: "diterima",
+                );
+                Navigator.of(context).pop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LayarMenelpon(
+                      idPengguna: idPenerima,
+                      idSaluran: idSaluran,
+                      idPemanggil: idPemanggil,
+                      idPenerima: idPenerima,
+                      idPanggilan: idSaluran,
+                      namaPengguna: '???', // Atur sesuai konteks
+                    ),
+                  ),
+                );
+              },
+              child: Text("Terima"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _simpanTokenKeDatabase(String token) {
+    print("FCM Token: $token");
     if (idPengguna != null) {
       final tokenRef = FirebaseDatabase.instance.ref('pengguna/$idPengguna');
       tokenRef.update({'fcmToken': token});
@@ -119,11 +218,6 @@ class _LayarBerandaState extends State<LayarBeranda> {
     // Mendengarkan notifikasi saat aplikasi sedang aktif
     FirebaseMessaging.onMessage.listen((RemoteMessage pesan) {
       if (pesan.notification != null) {
-        _tampilkanDialogPanggilanMasuk({
-          'namaPemanggil': pesan.notification!.title,
-          'idPanggilan': 'Menghubungkan Panggilan',
-          'avatarPemanggil': 'default_avatar_url'
-        }, 'id_panggilan_contoh');
       }
     });
   }
@@ -212,118 +306,6 @@ class _LayarBerandaState extends State<LayarBeranda> {
         }
       });
     });
-  }
-
-  void _pantauPanggilanMasuk() {
-    // Pastikan idPengguna sudah diinisialisasi
-    if (idPengguna == null) {
-      print("ID pengguna tidak ditemukan. Tidak dapat memantau panggilan masuk.");
-      return;
-    }
-
-    // Referensi ke riwayat panggilan pengguna
-    final referensiRiwayatPanggilan = FirebaseDatabase.instance.ref('pengguna/$idPengguna/riwayatPanggilan');
-
-    // Dengarkan event ketika ada panggilan baru yang ditambahkan
-    referensiRiwayatPanggilan.onChildAdded.listen((event) {
-      try {
-        final dataPanggilan = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (dataPanggilan != null && dataPanggilan['status'] == 'memanggil') {
-          _tampilkanDialogPanggilanMasuk(dataPanggilan, event.snapshot.key!);
-        }
-      } catch (error) {
-        print("Error saat memantau panggilan masuk: $error");
-      }
-    });
-  }
-
-  void _tampilkanDialogPanggilanMasuk(Map dataPanggilan, String idPanggilan) {
-    // Dapatkan ID pemanggil dari data panggilan
-    final String idPemanggil = dataPanggilan['idPemanggil'] ?? 'unknown_id';
-
-    // Referensi ke riwayat panggilan pemanggil
-    final referensiRiwayatPanggilan = FirebaseDatabase.instance.ref('pengguna/$idPemanggil/riwayatPanggilan/$idPanggilan');
-
-    referensiRiwayatPanggilan.get().then((snapshot) {
-      if (snapshot.exists) {
-        final status = snapshot.child('status').value as String?;
-        if (status == 'memanggil') {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Panggilan Masuk dari ${dataPanggilan['namaPemanggil'] ?? 'Tidak Diketahui'}'),
-                actions: [
-                  TextButton(
-                    child: Text('Tolak', style: TextStyle(color: warnaUtama)),
-                    onPressed: () {
-                      _perbaruiStatusPanggilan(idPemanggil, idPanggilan, 'Panggilan Ditolak');
-                      Navigator.pop(context);
-                      _tampilkanDialogPanggilanDitolak();
-                    },
-                  ),
-                  TextButton(
-                    child: Text('Terima', style: TextStyle(color: warnaUtama)),
-                    onPressed: () async {
-                      _perbaruiStatusPanggilan(idPemanggil, idPanggilan, 'Panggilan Diterima');
-                      Navigator.pop(context);
-
-                      final String namaPemanggil = dataPanggilan['namaPemanggil'] ?? 'Tidak Diketahui';
-                      final String avatarPemanggil = dataPanggilan['avatarPemanggil'] ?? 'https://robohash.org/default';
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LayarMenelpon(
-                            idPengguna: idPemanggil,
-                            idPenerima: idPengguna!,
-                            idPanggilan: idPanggilan,
-                            namaPengguna: namaPemanggil,
-                            avatarPengguna: avatarPemanggil,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        }
-      }
-    }).catchError((error) {
-      print('Error saat membaca data panggilan: $error');
-    });
-  }
-
-  void _tampilkanDialogPanggilanDitolak() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Panggilan Ditolak'),
-        content: Text('Panggilan telah ditolak.'),
-        actions: [
-          TextButton(
-            child: Text('OK', style: TextStyle(color: warnaUtama)),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _perbaruiStatusPanggilan(String idPengguna, String idPanggilan, String status) async {
-    // Referensi ke jalur yang sesuai di database
-    final referensiRiwayatPanggilan = FirebaseDatabase.instance.ref('pengguna/$idPengguna/riwayatPanggilan/$idPanggilan');
-
-    // Perbarui status panggilan
-    await referensiRiwayatPanggilan.update({'status': status});
-
-    // Simpan status panggilan terakhir di SharedPreferences
-    SharedPreferences preferensi = await SharedPreferences.getInstance();
-    await preferensi.setString('statusPanggilanTerakhir', status);
-
-    print("Status panggilan diperbarui untuk $idPanggilan: $status");
   }
 
   void _lakukanPanggilanCepat() {
@@ -421,10 +403,14 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   void _mulaiPanggilan(String idPenerima) async {
+    // Buat idSaluran unik untuk setiap panggilan
+    String idSaluran = "$idPengguna-$idPenerima";
+    String idPemanggil = idPengguna!;
     String namaPenerima = await _ambilNamaPengguna(idPenerima);
     String waktuUnik = DateTime.now().millisecondsSinceEpoch.toString();
     _idPanggilan = waktuUnik; // Setel _idPanggilan di sini
 
+    // Simpan riwayat panggilan untuk pemanggil
     final referensiRiwayatPemanggil = FirebaseDatabase.instance
         .ref('pengguna/$idPengguna/riwayatPanggilan/$_idPanggilan');
 
@@ -433,9 +419,10 @@ class _LayarBerandaState extends State<LayarBeranda> {
       'idPenerima': idPenerima,
       'status': 'Menghubungkan Panggilan',
       'waktu': DateTime.now().millisecondsSinceEpoch,
-      'idSaluran': "$idPengguna-$idPenerima",
+      'idSaluran': idSaluran,
     });
 
+    // Simpan riwayat panggilan untuk penerima
     final referensiRiwayatPenerima = FirebaseDatabase.instance
         .ref('pengguna/$idPenerima/riwayatPanggilan/$_idPanggilan');
 
@@ -444,14 +431,17 @@ class _LayarBerandaState extends State<LayarBeranda> {
       'idPenerima': idPenerima,
       'status': 'Menghubungkan Panggilan',
       'waktu': DateTime.now().millisecondsSinceEpoch,
-      'idSaluran': "$idPengguna-$idPenerima",
+      'idSaluran': idSaluran,
     });
 
+    // Navigasi ke layar menelpon
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => LayarMenelpon(
           idPengguna: idPengguna!,
+          idSaluran: idSaluran,
+          idPemanggil: idPemanggil,
           idPenerima: idPenerima,
           idPanggilan: _idPanggilan!,
           namaPengguna: namaPenerima,
@@ -488,8 +478,8 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
               // Restart aplikasi dengan mendorong kembali ke main.dart
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => AplikasiSaya()), // Ganti MyApp dengan widget utama di main.dart
-                    (Route<dynamic> route) => false, // Menghapus semua rute sebelumnya
+                MaterialPageRoute(builder: (context) => AplikasiSaya()),
+                    (Route<dynamic> route) => false,
               );
             },
           ),
@@ -523,13 +513,17 @@ class _LayarBerandaState extends State<LayarBeranda> {
                       backgroundImage: NetworkImage(kontak['avatar']),
                       radius: 20,
                     ),
-                    title: Text(
-                      kontak['namaPengguna'],
-                      style: TextStyle(
-                        color: warnaTeksHitam,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold,
-                      ),
+                    title: FutureBuilder<String>(
+                      future: _ambilNamaPengguna(kontak['idPengguna']),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Text('Memuat...');
+                        } else if (snapshot.hasError) {
+                          return Text('Error');
+                        } else {
+                          return Text(snapshot.data ?? 'Tidak Diketahui');
+                        }
+                      },
                     ),
                     subtitle: Text(
                       kontak['statusPengguna'],
@@ -539,7 +533,6 @@ class _LayarBerandaState extends State<LayarBeranda> {
                       ),
                     ),
                     onTap: () {
-                      // Tampilkan konfirmasi sebelum memulai panggilan
                       _tampilkanKonfirmasiPanggilan(kontak['namaPengguna'], kontak['idPengguna']);
                     },
                   );
