@@ -139,9 +139,13 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     _perbaruiRiwayatStatus(widget.idPenerima, 'Panggilan Berakhir');
 
     // Kembali ke halaman beranda
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => LayarBeranda()),
-    );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => LayarBeranda()),
+      );
+    }
 
     // Tampilkan dialog akhir jika ada pesan
     if (pesan.isNotEmpty) {
