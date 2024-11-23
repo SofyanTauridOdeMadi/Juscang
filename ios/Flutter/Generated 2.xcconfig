@@ -1,0 +1,14 @@
+// This is a generated file; do not edit or check into version control.
+FLUTTER_ROOT=/Users/sofyantauridodemadi/Developer/flutter
+FLUTTER_APPLICATION_PATH=/Users/sofyantauridodemadi/Documents/Kuliah Teknik Komputer/SEMESTER 5 (GANJIL)/21B01C514 - PEMROGRAMAN JARINGAN/PROYEK APLIKASI/juscang
+COCOAPODS_PARALLEL_CODE_SIGN=true
+FLUTTER_TARGET=lib/main.dart
+FLUTTER_BUILD_DIR=build
+FLUTTER_BUILD_NAME=6.8.5
+FLUTTER_BUILD_NUMBER=6.8.5
+EXCLUDED_ARCHS[sdk=iphonesimulator*]=i386
+EXCLUDED_ARCHS[sdk=iphoneos*]=armv7
+DART_OBFUSCATION=false
+TRACK_WIDGET_CREATION=true
+TREE_SHAKE_ICONS=false
+PACKAGE_CONFIG=.dart_tool/package_config.json

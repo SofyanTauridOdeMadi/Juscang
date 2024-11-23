@@ -215,13 +215,20 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   void _pantauPanggilanMasuk() {
-    final referensiPanggilan = FirebaseDatabase.instance.ref('panggilan');
-    referensiPanggilan.onChildAdded.listen((event) {
+    // Pastikan idPengguna sudah diinisialisasi
+    if (idPengguna == null) {
+      print("ID pengguna tidak ditemukan. Tidak dapat memantau panggilan masuk.");
+      return;
+    }
+
+    // Referensi ke riwayat panggilan pengguna
+    final referensiRiwayatPanggilan = FirebaseDatabase.instance.ref('pengguna/$idPengguna/riwayatPanggilan');
+
+    // Dengarkan event ketika ada panggilan baru yang ditambahkan
+    referensiRiwayatPanggilan.onChildAdded.listen((event) {
       try {
         final dataPanggilan = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (dataPanggilan != null &&
-            dataPanggilan['status'] == 'memanggil' &&
-            dataPanggilan['idPenerima'] == idPengguna) {
+        if (dataPanggilan != null && dataPanggilan['status'] == 'memanggil') {
           _tampilkanDialogPanggilanMasuk(dataPanggilan, event.snapshot.key!);
         }
       } catch (error) {
@@ -231,9 +238,13 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   void _tampilkanDialogPanggilanMasuk(Map dataPanggilan, String idPanggilan) {
-    final referensiPanggilan = FirebaseDatabase.instance.ref('panggilan/$idPanggilan');
+    // Dapatkan ID pemanggil dari data panggilan
+    final String idPemanggil = dataPanggilan['idPemanggil'] ?? 'unknown_id';
 
-    referensiPanggilan.get().then((snapshot) {
+    // Referensi ke riwayat panggilan pemanggil
+    final referensiRiwayatPanggilan = FirebaseDatabase.instance.ref('pengguna/$idPemanggil/riwayatPanggilan/$idPanggilan');
+
+    referensiRiwayatPanggilan.get().then((snapshot) {
       if (snapshot.exists) {
         final status = snapshot.child('status').value as String?;
         if (status == 'memanggil') {
@@ -246,7 +257,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
                   TextButton(
                     child: Text('Tolak', style: TextStyle(color: warnaUtama)),
                     onPressed: () {
-                      _perbaruiStatusPanggilan(idPanggilan, 'Panggilan Ditolak');
+                      _perbaruiStatusPanggilan(idPemanggil, idPanggilan, 'Panggilan Ditolak');
                       Navigator.pop(context);
                       _tampilkanDialogPanggilanDitolak();
                     },
@@ -254,7 +265,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
                   TextButton(
                     child: Text('Terima', style: TextStyle(color: warnaUtama)),
                     onPressed: () async {
-                      _perbaruiStatusPanggilan(idPanggilan, 'Panggilan Diterima');
+                      _perbaruiStatusPanggilan(idPemanggil, idPanggilan, 'Panggilan Diterima');
                       Navigator.pop(context);
 
                       final String namaPemanggil = dataPanggilan['namaPemanggil'] ?? 'Tidak Diketahui';
@@ -264,7 +275,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => LayarMenelpon(
-                            idPengguna: dataPanggilan['idPemanggil'] ?? 'unknown_id',
+                            idPengguna: idPemanggil,
                             idPenerima: idPengguna!,
                             idPanggilan: idPanggilan,
                             namaPengguna: namaPemanggil,
@@ -280,6 +291,8 @@ class _LayarBerandaState extends State<LayarBeranda> {
           );
         }
       }
+    }).catchError((error) {
+      print('Error saat membaca data panggilan: $error');
     });
   }
 
@@ -299,12 +312,18 @@ class _LayarBerandaState extends State<LayarBeranda> {
     );
   }
 
-  void _perbaruiStatusPanggilan(String idPanggilan, String status) async {
-    final referensiPanggilan = FirebaseDatabase.instance.ref('panggilan/$idPanggilan');
-    referensiPanggilan.update({'status': status});
+  void _perbaruiStatusPanggilan(String idPengguna, String idPanggilan, String status) async {
+    // Referensi ke jalur yang sesuai di database
+    final referensiRiwayatPanggilan = FirebaseDatabase.instance.ref('pengguna/$idPengguna/riwayatPanggilan/$idPanggilan');
 
+    // Perbarui status panggilan
+    await referensiRiwayatPanggilan.update({'status': status});
+
+    // Simpan status panggilan terakhir di SharedPreferences
     SharedPreferences preferensi = await SharedPreferences.getInstance();
     await preferensi.setString('statusPanggilanTerakhir', status);
+
+    print("Status panggilan diperbarui untuk $idPanggilan: $status");
   }
 
   void _lakukanPanggilanCepat() {
@@ -460,11 +479,16 @@ class _LayarBerandaState extends State<LayarBeranda> {
           IconButton(
             icon: Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
+              // Hapus semua data di SharedPreferences
               SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
+              await prefs.clear(); // Membersihkan seluruh data di SharedPreferences
+
+              // Logout dari FirebaseAuth
               await FirebaseAuth.instance.signOut();
+
+              // Restart aplikasi dengan mendorong kembali ke main.dart
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => AplikasiSaya()), // ganti MyApp dengan nama widget utama di main.dart
+                MaterialPageRoute(builder: (context) => AplikasiSaya()), // Ganti MyApp dengan widget utama di main.dart
                     (Route<dynamic> route) => false, // Menghapus semua rute sebelumnya
               );
             },
