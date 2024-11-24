@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'Otentikasi.dart';
 import 'Menelpon.dart';
 import 'main.dart';
 
@@ -43,6 +44,33 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
   Future<void> _mintaIzin() async {
     await [Permission.camera, Permission.microphone, Permission.notification, Permission.bluetooth].request();
+  }
+
+  Future<void> logoutPengguna(BuildContext context) async {
+    try {
+      // 1. Perbarui status pengguna di database (opsional)
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userId = user.uid;
+        await FirebaseDatabase.instance
+            .ref('pengguna/$userId')
+            .update({'status': 'offline'});
+      }
+
+      // 2. Logout dari FirebaseAuth
+      await FirebaseAuth.instance.signOut();
+
+      // 3. Hapus data dari SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // 4. Navigasikan pengguna ke layar login
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => LayarOtentikasi()),
+      );
+    } catch (e) {
+      print("Kesalahan saat logout: $e");
+    }
   }
 
   Future<void> _ambilIdPengguna() async {
@@ -466,18 +494,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
           IconButton(
             icon: Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
-              // Hapus semua data di SharedPreferences
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.clear(); // Membersihkan seluruh data di SharedPreferences
-
-              // Logout dari FirebaseAuth
-              await FirebaseAuth.instance.signOut();
-
-              // Restart aplikasi dengan mendorong kembali ke main.dart
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => AplikasiSaya()),
-                    (Route<dynamic> route) => false,
-              );
+              logoutPengguna(context);
             },
           ),
         ],

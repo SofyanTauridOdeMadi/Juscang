@@ -37,43 +37,48 @@ class _LayarOtentikasiState extends State<LayarOtentikasi> {
 
     try {
       UserCredential kredensialPengguna;
-      final idPengguna = _penggunaController.text; // Menggunakan ID pengguna langsung dari input
+      final idPengguna = _penggunaController.text.trim();
 
       if (_modeMasuk) {
-        // Mode Masuk
+        // Validasi email menggunakan domain khusus
+        final email = '$idPengguna@juscang.id';
         kredensialPengguna = await _otentikasi.signInWithEmailAndPassword(
-          email: idPengguna + '@juscang.id',
+          email: email,
           password: _kataSandiController.text,
         );
       } else {
-        // Mode Daftar
+        // Validasi apakah ID pengguna sudah ada
+        final snapshot = await _database.child('pengguna/$idPengguna').get();
+        if (snapshot.exists) {
+          setState(() {
+            _pesanKesalahan = "ID Pengguna sudah digunakan.";
+          });
+          return;
+        }
+
+        // Buat akun baru
+        final email = '$idPengguna@juscang.id';
         kredensialPengguna = await _otentikasi.createUserWithEmailAndPassword(
-          email: idPengguna + '@juscang.id',
+          email: email,
           password: _kataSandiController.text,
         );
 
-        // Simpan ke Firebase Realtime Database setelah pendaftaran
-        // Gunakan `idPengguna` dari input pengguna sebagai kunci data di Firebase Realtime Database
-        DatabaseReference referensiPengguna = _database.child('pengguna/$idPengguna');
-
-        // Simpan detail pengguna
-        await referensiPengguna.set({
+        // Tambahkan data pengguna ke database
+        await _database.child('pengguna/$idPengguna').set({
           'idPengguna': idPengguna,
-          'namaPengguna': kredensialPengguna.user!.email,
-          'statusPengguna': 'Belum Diatur',
+          'namaPengguna': kredensialPengguna.user?.email,
+          'status': 'online',
         });
       }
 
-      // Simpan idPengguna di SharedPreferences agar bisa diambil di LayarBeranda
+      // Simpan data pengguna ke SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('idPengguna', idPengguna);
 
-      // Jika pengguna berhasil masuk atau daftar, arahkan ke Beranda
-      if (kredensialPengguna.user != null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LayarBeranda()),
-        );
-      }
+      // Navigasikan ke beranda
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => LayarBeranda()),
+      );
     } catch (e) {
       setState(() {
         _pesanKesalahan = e.toString();
