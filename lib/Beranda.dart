@@ -106,28 +106,27 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   void setupFirebaseMessaging(BuildContext context) {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
 
+    // Saat notifikasi diterima ketika aplikasi berjalan di foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("Pesan FCM diterima di foreground: ${message.data}");
+
       if (message.data['jenisPesan'] == 'panggilan') {
-        print("Panggilan masuk diterima: ${message.data}");
         tampilkanDialogPanggilan(
           context,
           idSaluran: message.data['idSaluran'] ?? '',
           idPemanggil: message.data['idPemanggil'] ?? '',
           idPenerima: message.data['idPenerima'] ?? '',
         );
-      } else {
-        print("Pesan lain diterima: ${message.data}");
       }
+    });
 
-      if (message.data['jenisPesan'] == 'panggilan') {
-        // Notifikasi panggilan masuk
-        tampilkanDialogPanggilan(
-          context,
-          idSaluran: message.data['idSaluran'],
-          idPemanggil: message.data['idPemanggil'],
-          idPenerima: message.data['idPenerima'],
-        );
+    // Token untuk debug dan pengujian
+    messaging.getToken().then((token) {
+      print("FCM Token: $token");
+      if (idPengguna != null) {
+        _simpanTokenKeDatabase(token!);
       }
     });
   }
@@ -148,27 +147,13 @@ class _LayarBerandaState extends State<LayarBeranda> {
           actions: [
             TextButton(
               onPressed: () {
-                // Tolak panggilan
-                perbaruiStatusPanggilan(
-                  idSaluran,
-                  idPemanggil,
-                  idPenerima,
-                  status: "ditolak",
-                );
                 Navigator.of(context).pop(); // Tutup dialog
               },
               child: Text("Tolak"),
             ),
             TextButton(
               onPressed: () {
-                // Terima panggilan
-                perbaruiStatusPanggilan(
-                  idSaluran,
-                  idPemanggil,
-                  idPenerima,
-                  status: "diterima",
-                );
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Tutup dialog
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -192,9 +177,8 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   void _simpanTokenKeDatabase(String token) {
-    print("FCM Token: $token");
     if (idPengguna != null) {
-      final tokenRef = FirebaseDatabase.instance.ref('pengguna/$idPengguna');
+      DatabaseReference tokenRef = FirebaseDatabase.instance.ref('pengguna/$idPengguna');
       tokenRef.update({'fcmToken': token});
     }
   }
