@@ -116,19 +116,8 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       if (!_penerimaBergabung) {
         _pemutarAudio.stop();
         _akhiriPanggilan("Panggilan tidak terjawab.");
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text("Panggilan Gagal"),
-            content: Text("Penerima tidak merespons panggilan."),
-            actions: [
-              TextButton(
-                child: Text("OK"),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        );
+        _perbaruiRiwayatStatus(widget.idPengguna, 'Panggilan Tak Terjawab');
+        _perbaruiRiwayatStatus(widget.idPenerima, 'Panggilan Tak Terjawab');
       }
     });
   }
