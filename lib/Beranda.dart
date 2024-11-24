@@ -106,7 +106,20 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   void setupFirebaseMessaging(BuildContext context) {
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.data['jenisPesan'] == 'panggilan') {
+        print("Panggilan masuk diterima: ${message.data}");
+        tampilkanDialogPanggilan(
+          context,
+          idSaluran: message.data['idSaluran'] ?? '',
+          idPemanggil: message.data['idPemanggil'] ?? '',
+          idPenerima: message.data['idPenerima'] ?? '',
+        );
+      } else {
+        print("Pesan lain diterima: ${message.data}");
+      }
+
       if (message.data['jenisPesan'] == 'panggilan') {
         // Notifikasi panggilan masuk
         tampilkanDialogPanggilan(

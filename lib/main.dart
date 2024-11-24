@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'Beranda.dart';
 import 'Otentikasi.dart';
 import 'package:flutter/services.dart';
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // This will handle messages received when the app is in the background or terminated
+  print("Handling a background message: ${message.messageId}");
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-    );
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
@@ -97,10 +103,6 @@ class _LayarSplashState extends State<LayarSplash> with SingleTickerProviderStat
 
   Future<void> _periksaStatusLogin() async {
     User? pengguna = FirebaseAuth.instance.currentUser;
-
-    // Log untuk memastikan kode mencapai bagian ini
-    print("Memeriksa status login...");
-
     if (!mounted) return; // Pastikan widget masih aktif sebelum melanjutkan
 
     if (pengguna != null) {
