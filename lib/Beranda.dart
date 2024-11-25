@@ -1,11 +1,8 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'Menelpon.dart';
 import 'main.dart';
 
@@ -36,54 +33,9 @@ class _LayarBerandaState extends State<LayarBeranda> {
   @override
   void initState() {
     super.initState();
-    setupFirebaseMessaging(context);
     _mintaIzin();
-    _inisialisasiNotifikasiFCM();
     _ambilIdPengguna();
     _muatSemuaKontak();
-  }
-
-  Future<void> kirimNotifikasiPanggilan({
-    required String tokenPenerima,
-    required String idPemanggil,
-    required String idPenerima,
-    required String idSaluran,
-  }) async {
-    const String serverKey = "YOUR_FIREBASE_SERVER_KEY";
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'key=$serverKey',
-    };
-
-    final body = {
-      "to": tokenPenerima,
-      "data": {
-        "jenisPesan": "panggilan",
-        "idSaluran": idSaluran,
-        "idPemanggil": idPemanggil,
-        "idPenerima": idPenerima,
-      },
-      "notification": {
-        "title": "Panggilan Masuk",
-        "body": "Ada panggilan masuk dari $idPemanggil."
-      }
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse("https://fcm.googleapis.com/fcm/send"),
-        headers: headers,
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200) {
-        print("Notifikasi terkirim ke $tokenPenerima");
-      } else {
-        print("Gagal mengirim notifikasi: ${response.body}");
-      }
-    } catch (e) {
-      print("Error saat mengirim notifikasi: $e");
-    }
   }
 
   Future<void> _mintaIzin() async {
@@ -163,141 +115,23 @@ class _LayarBerandaState extends State<LayarBeranda> {
     });
   }
 
-  void setupFirebaseMessaging(BuildContext context) {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-    // Saat notifikasi diterima di foreground
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Pesan FCM diterima di foreground: ${message.data}");
-
-      // Tangani notifikasi jenis panggilan
-      if (message.data['jenisPesan'] == 'panggilan') {
-        tampilkanDialogPanggilan(
-          context,
-          idSaluran: message.data['idSaluran'] ?? '',
-          idPemanggil: message.data['idPemanggil'] ?? '',
-          idPenerima: message.data['idPenerima'] ?? '',
-        );
-      }
-    });
-
-    // Untuk debug dan pengujian, cetak token
-    messaging.getToken().then((token) {
-      print("FCM Token: $token");
-      // Simpan token jika perlu
-      if (idPengguna != null) {
-        _simpanTokenKeDatabase(token!);
-      }
-    });
-  }
-
-  void tampilkanDialogPanggilan(BuildContext context, {required String idSaluran, required String idPemanggil, required String idPenerima}) {
+  void _tampilkanDialogDitolak() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Panggilan Masuk"),
-        content: Text("Ada panggilan masuk dari $idPemanggil."),
+        title: Text("Panggilan Ditolak"),
+        content: Text("Panggilan Anda telah ditolak oleh penerima."),
         actions: [
           TextButton(
+            child: Text("OK"),
             onPressed: () {
               Navigator.pop(context);
-              // Kirim notifikasi ke pemanggil bahwa panggilan ditolak
-              FirebaseDatabase.instance
-                  .ref('pengguna/$idPemanggil')
-                  .get()
-                  .then((snapshot) {
-                final data = snapshot.value as Map<dynamic, dynamic>;
-                final tokenPemanggil = data['token'];
-                kirimNotifikasiPanggilan(
-                  tokenPenerima: tokenPemanggil,
-                  idPemanggil: idPenerima, // Pembalik peran untuk respon
-                  idPenerima: idPemanggil,
-                  idSaluran: idSaluran,
-                );
-              });
+              // Tambahkan logika tambahan jika perlu, seperti keluar dari panggilan RTC
             },
-            child: Text("Tolak"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigasi ke layar panggilan
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LayarMenelpon(
-                    idPengguna: idPenerima,
-                    idSaluran: idSaluran,
-                    idPemanggil: idPemanggil,
-                    idPenerima: idPenerima,
-                    idPanggilan: "ID_UNIK",
-                    namaPengguna: "Nama Pemanggil",
-                  ),
-                ),
-              );
-
-              // Kirim notifikasi ke pemanggil bahwa panggilan diterima
-              FirebaseDatabase.instance
-                  .ref('pengguna/$idPemanggil')
-                  .get()
-                  .then((snapshot) {
-                final data = snapshot.value as Map<dynamic, dynamic>;
-                final tokenPemanggil = data['token'];
-                kirimNotifikasiPanggilan(
-                  tokenPenerima: tokenPemanggil,
-                  idPemanggil: idPenerima,
-                  idPenerima: idPemanggil,
-                  idSaluran: idSaluran,
-                );
-              });
-            },
-            child: Text("Terima"),
           ),
         ],
       ),
     );
-  }
-
-  void _simpanTokenKeDatabase(String token) {
-    FirebaseDatabase.instance
-        .ref('pengguna/$idPengguna')
-        .update({'token': token});
-  }
-
-  void _inisialisasiNotifikasiFCM() async {
-    FirebaseMessaging pesan = FirebaseMessaging.instance;
-
-    // Periksa izin saat ini
-    NotificationSettings pengaturan = await pesan.getNotificationSettings();
-
-    if (pengaturan.authorizationStatus == AuthorizationStatus.notDetermined) {
-      // Jika izin belum ditentukan, minta izin
-      pengaturan = await pesan.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
-      if (pengaturan.authorizationStatus == AuthorizationStatus.denied) {
-        print("Notifikasi ditolak oleh pengguna.");
-        return;
-      }
-    } else if (pengaturan.authorizationStatus == AuthorizationStatus.denied) {
-      print("Izin notifikasi sebelumnya ditolak oleh pengguna.");
-      return;
-    }
-
-    // Mendapatkan token FCM untuk mengidentifikasi perangkat
-    String? token = await pesan.getToken();
-    if (token != null) {
-      _simpanTokenKeDatabase(token);
-    }
-
-    // Mendengarkan notifikasi saat aplikasi sedang aktif
-    FirebaseMessaging.onMessage.listen((RemoteMessage pesan) {
-      if (pesan.notification != null) {
-      }
-    });
   }
 
   Future<String> _ambilNamaPengguna(String id) async {

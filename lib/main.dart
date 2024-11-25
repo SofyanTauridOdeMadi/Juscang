@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'Beranda.dart';
 import 'Otentikasi.dart';
 import 'package:flutter/services.dart';
@@ -10,20 +9,6 @@ import 'package:flutter/services.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-
-  // Minta izin notifikasi
-  NotificationSettings settings = await FirebaseMessaging.instance.requestPermission();
-  print('Izin notifikasi: ${settings.authorizationStatus}');
-
-  // Handle notifikasi saat di foreground
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    if (message.data['jenisPesan'] == 'panggilan') {
-      // Pastikan context global untuk akses dialog
-      navigatorKey.currentState?.push(MaterialPageRoute(
-        builder: (context) => LayarBeranda(), // Atur ke layar aktif
-      ));
-    }
-  });
 
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
