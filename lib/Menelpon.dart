@@ -52,6 +52,18 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     super.initState();
     _putarSuaraMenunggu();
     _inisialisasiAgora();
+
+    _cekPanggilanAktif(widget.idSaluran).then((panggilanAktif) {
+      if (panggilanAktif) {
+        // Jika panggilan sudah aktif, langsung sambungkan
+        _mulaiPanggilan();
+      } else {
+        // Jika belum ada panggilan aktif, buat yang baru
+        _aturTimerTimeout();
+        _putarSuaraMenunggu();
+      }
+    });
+
     _aturTimerTimeout(); // Mulai timeout saat inisialisasi
     _pengontrolAnimasi = AnimationController(
       vsync: this,
@@ -123,16 +135,25 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   void _mulaiPanggilan() {
-    _pemutarAudio.stop(); // Hentikan suara menunggu
-    _timerTimeout?.cancel(); // Batalkan timeout jika panggilan dimulai
+    _pemutarAudio.stop();
+    _timerTimeout?.cancel();
     _penghitungDurasi = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _durasiPanggilan++;
       });
     });
+
+    // Perbarui status di Firebase
+    final referensiPanggilan = FirebaseDatabase.instance.ref('panggilanAktif/${widget.idSaluran}');
+    referensiPanggilan.set({
+      'status': 'Aktif',
+      'waktuMulai': DateTime.now().millisecondsSinceEpoch,
+    });
   }
 
   void _akhiriPanggilan(String pesan) {
+    final referensiPanggilan = FirebaseDatabase.instance.ref('panggilanAktif/${widget.idSaluran}');
+    referensiPanggilan.remove(); // Hapus panggilan dari Firebase
     _penghitungDurasi?.cancel(); // Hentikan timer durasi
     _timerTimeout?.cancel(); // Hentikan timer timeout
     _mesinRTC.leaveChannel(); // Keluar dari channel
@@ -170,6 +191,12 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     final menit = (_durasiPanggilan / 60).floor().toString().padLeft(2, '0');
     final detik = (_durasiPanggilan % 60).toString().padLeft(2, '0');
     return "$menit:$detik";
+  }
+
+  Future<bool> _cekPanggilanAktif(String idSaluran) async {
+    final DatabaseReference referensiPanggilan = FirebaseDatabase.instance.ref('panggilanAktif/$idSaluran');
+    final DataSnapshot snapshot = await referensiPanggilan.get();
+    return snapshot.exists;
   }
 
   Future<void> _tampilkanDialogAkhirPanggilan(String pesan) async {
