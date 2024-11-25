@@ -19,6 +19,7 @@ class LayarBeranda extends StatefulWidget {
 class _LayarBerandaState extends State<LayarBeranda> {
   final List<Map<String, dynamic>> daftarKontak = [];
   final List<Map<String, dynamic>> riwayatPanggilan = [];
+  List<Map<String, dynamic>> _riwayatPanggilan = [];
 
   String? idPengguna;
   String? _idPanggilan;
@@ -36,6 +37,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
     _mintaIzin();
     _ambilIdPengguna();
     _muatSemuaKontak();
+    _muatRiwayatPanggilan();
   }
 
   Future<void> _mintaIzin() async {
@@ -113,6 +115,27 @@ class _LayarBerandaState extends State<LayarBeranda> {
       'status': status,
       'waktu': DateTime.now().millisecondsSinceEpoch,
     });
+  }
+
+  Widget _buatItemRiwayat(Map<String, dynamic> dataRiwayat) {
+    return ListTile(
+      title: Text(dataRiwayat['status']),
+      subtitle: Text('Waktu: ${DateTime.fromMillisecondsSinceEpoch(dataRiwayat['waktu'])}'),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => LayarMenelpon(
+              idPengguna: dataRiwayat['idPemanggil'],
+              idSaluran: dataRiwayat['idSaluran'],
+              idPemanggil: dataRiwayat['idPemanggil'],
+              idPenerima: dataRiwayat['idPenerima'],
+              idPanggilan: dataRiwayat['idPanggilan'],
+              namaPengguna: 'Nama Pemanggil', // Ambil dari data jika ada
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _tampilkanDialogDitolak() {

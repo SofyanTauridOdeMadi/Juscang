@@ -147,6 +147,9 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     final referensiPanggilan = FirebaseDatabase.instance.ref('panggilanAktif/${widget.idSaluran}');
     referensiPanggilan.set({
       'status': 'Aktif',
+      'idSaluran': widget.idSaluran,
+      'idPemanggil': widget.idPengguna,
+      'idPenerima': widget.idPenerima,
       'waktuMulai': DateTime.now().millisecondsSinceEpoch,
     });
   }
