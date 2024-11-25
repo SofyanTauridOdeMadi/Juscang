@@ -7,16 +7,15 @@ import 'Beranda.dart';
 import 'Otentikasi.dart';
 import 'package:flutter/services.dart';
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // This will handle messages received when the app is in the background or terminated
-  print("Handling a background message: ${message.messageId}");
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // Dapatkan token perangkat
+    String? token = await messaging.getToken();
+    print("Token perangkat: $token");
   }
 
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
