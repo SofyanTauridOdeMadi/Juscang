@@ -9,14 +9,21 @@ import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp();
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
+  await Firebase.initializeApp();
 
-    // Dapatkan token perangkat
-    String? token = await messaging.getToken();
-    print("Token perangkat: $token");
-  }
+  // Minta izin notifikasi
+  NotificationSettings settings = await FirebaseMessaging.instance.requestPermission();
+  print('Izin notifikasi: ${settings.authorizationStatus}');
+
+  // Handle notifikasi saat di foreground
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    if (message.data['jenisPesan'] == 'panggilan') {
+      // Pastikan context global untuk akses dialog
+      navigatorKey.currentState?.push(MaterialPageRoute(
+        builder: (context) => LayarBeranda(), // Atur ke layar aktif
+      ));
+    }
+  });
 
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -35,6 +42,8 @@ const Color warnaKetiga = Color(0xFF855052);
 const Color warnaTeksUtama = Color(0xFF690909);
 const Color warnaTeksSekunder = Color(0xFF625D5D);
 const Color warnaTeksHitam = Color(0xFF0F0F0F);
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class AplikasiSaya extends StatelessWidget {
   @override

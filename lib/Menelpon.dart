@@ -147,7 +147,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       Navigator.of(context).pop();
     } else {
       Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LayarBeranda()),
+        MaterialPageRoute(builder: (context) => LayarBeranda()),
       );
     }
 
