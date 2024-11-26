@@ -1,6 +1,11 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'Menelpon.dart';
@@ -19,7 +24,6 @@ class LayarBeranda extends StatefulWidget {
 class _LayarBerandaState extends State<LayarBeranda> {
   final List<Map<String, dynamic>> daftarKontak = [];
   final List<Map<String, dynamic>> riwayatPanggilan = [];
-  List<Map<String, dynamic>> _riwayatPanggilan = [];
 
   String? idPengguna;
   String? _idPanggilan;
@@ -34,6 +38,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
   @override
   void initState() {
     super.initState();
+    _setupFirebaseMessaging();
     _mintaIzin();
     _ambilIdPengguna();
     _muatSemuaKontak();
@@ -117,44 +122,247 @@ class _LayarBerandaState extends State<LayarBeranda> {
     });
   }
 
-  Widget _buatItemRiwayat(Map<String, dynamic> dataRiwayat) {
-    return ListTile(
-      title: Text(dataRiwayat['status']),
-      subtitle: Text('Waktu: ${DateTime.fromMillisecondsSinceEpoch(dataRiwayat['waktu'])}'),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => LayarMenelpon(
-              idPengguna: dataRiwayat['idPemanggil'],
-              idSaluran: dataRiwayat['idSaluran'],
-              idPemanggil: dataRiwayat['idPemanggil'],
-              idPenerima: dataRiwayat['idPenerima'],
-              idPanggilan: dataRiwayat['idPanggilan'],
-              namaPengguna: 'Nama Pemanggil', // Ambil dari data jika ada
-            ),
-          ),
-        );
-      },
+  void _setupFirebaseMessaging() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // Meminta izin notifikasi untuk iOS
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('Izin notifikasi diberikan');
+    } else {
+      print('Izin notifikasi tidak diberikan');
+    }
+
+    // Mendapatkan token FCM perangkat
+    String? token = await messaging.getToken();
+    print('FCM Token: $token');
+
+    // Listener untuk notifikasi saat aplikasi sedang aktif
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.data['idSaluran'] != null) {
+        _tanganiPanggilanMasuk(message.data);
+      }
+    });
+
+    // Listener untuk notifikasi yang membuka aplikasi
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('Pesan dibuka dari notifikasi: ${message.notification?.title}');
+    });
+  }
+
+  void _tanganiPanggilanMasuk(Map<String, dynamic> data) {
+    String idSaluran = data['idSaluran'];
+    String idPemanggil = data['idPemanggil'];
+    String namaPemanggil = data['namaPemanggil'];
+
+    // Menampilkan dialog panggilan masuk
+    _tampilkanDialogPanggilanMasuk({
+      'idSaluran': idSaluran,
+      'idPemanggil': idPemanggil,
+      'namaPemanggil': namaPemanggil,
+    });
+  }
+
+  void _terimaPanggilan(String idSaluran, String idPemanggil) async {
+    // Simpan status "Panggilan Diterima" ke Firebase
+    final referensiRiwayat = FirebaseDatabase.instance
+        .ref('pengguna/$idPengguna/riwayatPanggilan/$idSaluran');
+    referensiRiwayat.update({
+      'status': 'Panggilan Diterima',
+    });
+
+    // Navigasi ke layar menelpon
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LayarMenelpon(
+          idPengguna: idPengguna!,
+          idSaluran: idSaluran,
+          idPemanggil: idPemanggil,
+          idPenerima: idPengguna!,
+          idPanggilan: idSaluran, // idPanggilan sama dengan idSaluran
+          namaPengguna: 'Nama Pemanggil', // Ambil nama pemanggil dari data
+        ),
+      ),
     );
   }
 
-  void _tampilkanDialogDitolak() {
+  void _kirimNotifikasiPanggilanDitolak({
+    required String tujuan, // Bisa token atau idPemanggil
+    required String idSaluran,
+    required bool menggunakanToken,
+  }) async {
+    try {
+      String token;
+      if (menggunakanToken) {
+        token = tujuan;
+      } else {
+        // Ambil token penerima berdasarkan id jika tidak menggunakan token langsung
+        token = await _ambilTokenPemanggil(tujuan);
+      }
+
+      // Kirim notifikasi menggunakan token yang telah diambil
+      await kirimNotifikasi(
+        token,
+        "Panggilan Ditolak",
+        "Panggilan Anda telah ditolak oleh penerima.",
+        {
+          'idSaluran': idSaluran,
+          'status': 'Panggilan Ditolak',
+        },
+      );
+
+      // Perbarui status panggilan di Firebase
+      final referensiRiwayat = FirebaseDatabase.instance
+          .ref('pengguna/$idPengguna/riwayatPanggilan/$idSaluran');
+      await referensiRiwayat.update({
+        'status': 'Panggilan Ditolak',
+        'waktu': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      print('Notifikasi penolakan berhasil dikirim.');
+    } catch (e) {
+      print('Error saat mengirim notifikasi penolakan: $e');
+    }
+  }
+
+  void _tampilkanDialogPanggilanMasuk(Map<String, dynamic> data) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text("Panggilan Ditolak"),
-        content: Text("Panggilan Anda telah ditolak oleh penerima."),
+        title: Text('Panggilan Masuk'),
+        content: Text('Anda menerima panggilan dari ${data['namaPemanggil']}'),
         actions: [
           TextButton(
-            child: Text("OK"),
             onPressed: () {
-              Navigator.pop(context);
-              // Tambahkan logika tambahan jika perlu, seperti keluar dari panggilan RTC
+              Navigator.of(context).pop(); // Tutup dialog
+              _kirimNotifikasiPanggilanDitolak(
+                tujuan: data['idPemanggil'], // ID pengguna atau token
+                idSaluran: data['idSaluran'], // ID saluran
+                menggunakanToken: false, // False karena `idPemanggil` adalah ID pengguna
+              );
             },
+            child: Text('Tolak'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Tutup dialog
+              _terimaPanggilan(data['idSaluran'], data['idPemanggil']);
+            },
+            child: Text('Angkat'),
           ),
         ],
       ),
     );
+  }
+
+  Future<String> _ambilTokenPemanggil(String idPemanggil) async {
+    final snapshot = await FirebaseDatabase.instance.ref('pengguna/$idPemanggil').get();
+    if (snapshot.exists && snapshot.value is Map) {
+      final data = snapshot.value as Map;
+      return data['fcmToken'] ?? '';
+    }
+    throw Exception('Token tidak ditemukan untuk $idPemanggil');
+  }
+
+  Future<String> _ambilTokenPenerima(String idPenerima) async {
+    final snapshot = await FirebaseDatabase.instance.ref('pengguna/$idPenerima').get();
+
+    // Cek apakah snapshot ada dan memiliki nilai
+    if (snapshot.exists && snapshot.value != null) {
+      // Pastikan snapshot.value dikonversi ke Map
+      final data = snapshot.value as Map<dynamic, dynamic>?;
+
+      // Cek apakah 'fcmToken' tersedia di data
+      if (data != null && data.containsKey('fcmToken')) {
+        return data['fcmToken'] as String; // Ambil nilai 'fcmToken'
+      }
+    }
+
+    // Jika token tidak ditemukan, lempar exception
+    throw Exception('Token tidak ditemukan untuk $idPenerima');
+  }
+
+  // Fungsi kirimNotifikasi di sini
+  Future<void> kirimNotifikasi(
+      String tokenPenerima, String judul, String isi, Map<String, String> map) async {
+    // Muat file Service Account Key
+    final serviceAccountKey = File('service-account-key.json');
+    final jsonKey = json.decode(await serviceAccountKey.readAsString());
+
+    // Dapatkan token otorisasi
+    final response = await http.post(
+      Uri.parse('https://oauth2.googleapis.com/token'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        'assertion': _generateJwt(jsonKey),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final accessToken = json.decode(response.body)['access_token'];
+
+      // Kirim notifikasi ke FCM
+      final notifikasi = {
+        'message': {
+          'token': tokenPenerima,
+          'notification': {
+            'title': judul,
+            'body': isi,
+          },
+        },
+      };
+
+      final fcmResponse = await http.post(
+        Uri.parse(
+            'https://fcm.googleapis.com/v1/projects/${jsonKey['project_id']}/messages:send'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(notifikasi),
+      );
+
+      if (fcmResponse.statusCode == 200) {
+        print('Notifikasi berhasil dikirim');
+      } else {
+        print('Gagal mengirim notifikasi: ${fcmResponse.body}');
+      }
+    } else {
+      print('Gagal mendapatkan token: ${response.body}');
+    }
+  }
+
+// Fungsi untuk membuat JWT
+  String _generateJwt(Map<String, dynamic> jsonKey) {
+    // Header dan Claims
+    final claims = {
+      'iss': jsonKey['client_email'],
+      'scope': 'https://www.googleapis.com/auth/firebase.messaging',
+      'aud': jsonKey['token_uri'],
+      'exp': (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600,
+      'iat': (DateTime.now().millisecondsSinceEpoch ~/ 1000),
+    };
+
+    // Private Key dalam format PEM
+    final privateKeyPem = jsonKey['private_key'];
+
+    // Buat JWT menggunakan dart_jsonwebtoken
+    final jwt = JWT(claims);
+
+    // Tanda tangani JWT dengan RSA256
+    final token = jwt.sign(RSAPrivateKey(privateKeyPem));
+
+    return token;
   }
 
   Future<String> _ambilNamaPengguna(String id) async {
@@ -368,6 +576,21 @@ class _LayarBerandaState extends State<LayarBeranda> {
       'waktu': DateTime.now().millisecondsSinceEpoch,
       'idSaluran': idSaluran,
     });
+
+    // Ambil FCM Token penerima
+    String tokenPenerima = await _ambilTokenPenerima(idPenerima);
+
+    // Kirim notifikasi ke penerima
+    await kirimNotifikasi(
+      tokenPenerima,
+      "Panggilan Masuk",
+      "$namaPengguna sedang menelepon Anda.",
+      {
+        'idSaluran': idSaluran,
+        'idPemanggil': idPengguna!,
+        'namaPemanggil': namaPengguna!,
+      },
+    );
 
     // Navigasi ke layar menelpon
     Navigator.push(
