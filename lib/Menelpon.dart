@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
 import 'Beranda.dart';
+import 'utils.dart';
 
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
@@ -134,24 +135,71 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     });
   }
 
-  void _mulaiPanggilan() {
-    _pemutarAudio.stop();
-    _timerTimeout?.cancel();
-    _penghitungDurasi = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        _durasiPanggilan++;
-      });
-    });
+  void _mulaiPanggilan() async {
+    try {
+      // Ambil nama pemanggil dan penerima
+      String namaPemanggil = await Utils.ambilNamaPengguna(widget.idPemanggil);
+      String namaPenerima = await Utils.ambilNamaPengguna(widget.idPenerima);
 
-    // Perbarui status di Firebase
-    final referensiPanggilan = FirebaseDatabase.instance.ref('panggilanAktif/${widget.idSaluran}');
-    referensiPanggilan.set({
-      'status': 'Aktif',
-      'idSaluran': widget.idSaluran,
-      'idPemanggil': widget.idPengguna,
-      'idPenerima': widget.idPenerima,
-      'waktuMulai': DateTime.now().millisecondsSinceEpoch,
-    });
+      // Ambil token penerima
+      String tokenPenerima = await Utils.ambilTokenPenerima(widget.idPenerima);
+      print("Token FCM penerima: $tokenPenerima");
+
+      if (tokenPenerima.isEmpty) {
+        print("Token FCM penerima kosong. Tidak dapat mengirim notifikasi.");
+        return;
+      }
+
+      // Perbarui struktur panggilan di Firebase
+      await FirebaseDatabase.instance
+          .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}')
+          .set({
+        'idPemanggil': widget.idPemanggil,
+        'namaPemanggil': namaPemanggil,
+        'idPenerima': widget.idPenerima,
+        'namaPenerima': namaPenerima,
+        'idSaluran': widget.idSaluran,
+        'status': 'Menghubungkan Panggilan',
+        'waktu': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await FirebaseDatabase.instance
+          .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}')
+          .set({
+        'idPemanggil': widget.idPemanggil,
+        'namaPemanggil': namaPemanggil,
+        'idPenerima': widget.idPenerima,
+        'namaPenerima': namaPenerima,
+        'idSaluran': widget.idSaluran,
+        'status': 'Menghubungkan Panggilan',
+        'waktu': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // Kirim notifikasi ke penerima
+      await kirimNotifikasi(
+        tokenPenerima,
+        "Panggilan Masuk",
+        "$namaPemanggil sedang menelepon Anda.",
+        {
+          'idSaluran': widget.idSaluran,
+          'idPemanggil': widget.idPemanggil,
+          'namaPemanggil': namaPemanggil,
+        },
+      );
+
+      print("Notifikasi panggilan berhasil dikirim ke penerima.");
+
+      // Mulai penghitungan durasi panggilan
+      _pemutarAudio.stop();
+      _timerTimeout?.cancel();
+      _penghitungDurasi = Timer.periodic(Duration(seconds: 1), (timer) {
+        setState(() {
+          _durasiPanggilan++;
+        });
+      });
+    } catch (e) {
+      print("Error saat memulai panggilan: $e");
+    }
   }
 
   void _akhiriPanggilan(String pesan) {
