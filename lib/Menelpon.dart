@@ -143,7 +143,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
 
       // Ambil token penerima
       String tokenPenerima = await Utils.ambilTokenPenerima(widget.idPenerima);
-      print("Token FCM penerima: $tokenPenerima");
 
       if (tokenPenerima.isEmpty) {
         print("Token FCM penerima kosong. Tidak dapat mengirim notifikasi.");

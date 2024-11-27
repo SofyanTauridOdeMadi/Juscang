@@ -25,7 +25,7 @@ Future<void> kirimNotifikasi(
   try {
     final jsonKey = firebaseServiceAccountKey;
 
-    // Dapatkan token otorisasi
+    // Mendapatkan token otorisasi
     final response = await http.post(
       Uri.parse('https://oauth2.googleapis.com/token'),
       headers: {
@@ -39,8 +39,9 @@ Future<void> kirimNotifikasi(
 
     if (response.statusCode == 200) {
       final accessToken = json.decode(response.body)['access_token'];
+      print("Token akses berhasil didapatkan: $accessToken");
 
-      // Kirim notifikasi ke FCM
+      // Buat payload notifikasi
       final notifikasi = {
         'message': {
           'token': tokenPenerima,
@@ -52,6 +53,9 @@ Future<void> kirimNotifikasi(
         },
       };
 
+      print("Payload notifikasi: ${jsonEncode(notifikasi)}");
+
+      // Kirim notifikasi ke FCM
       final fcmResponse = await http.post(
         Uri.parse(
             'https://fcm.googleapis.com/v1/projects/${jsonKey['project_id']}/messages:send'),
@@ -62,16 +66,17 @@ Future<void> kirimNotifikasi(
         body: jsonEncode(notifikasi),
       );
 
+      // Periksa respons dari API FCM
       if (fcmResponse.statusCode == 200) {
         print('Notifikasi berhasil dikirim');
       } else {
-        print('Gagal mengirim notifikasi: ${fcmResponse.body}');
+        print('Gagal mengirim notifikasi. Respons FCM: ${fcmResponse.body}');
       }
     } else {
-      print('Gagal mendapatkan token: ${response.body}');
+      print('Gagal mendapatkan token akses. Respons: ${response.body}');
     }
   } catch (e) {
-    print("Error saat mengirim notifikasi: $e");
+    print("Terjadi kesalahan saat mengirim notifikasi: $e");
   }
 }
 

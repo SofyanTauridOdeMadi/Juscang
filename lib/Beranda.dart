@@ -13,6 +13,7 @@ const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
 const Color warnaTeksHitam = Color(0xFF0F0F0F);
 
+
 class LayarBeranda extends StatefulWidget {
   @override
   _LayarBerandaState createState() => _LayarBerandaState();
@@ -31,12 +32,13 @@ class Utils {
   }
 
   static Future<String> ambilTokenPenerima(String idPenerima) async {
-    final ref = FirebaseDatabase.instance.ref('pengguna/$idPenerima/token');
+    final ref = FirebaseDatabase.instance.ref('pengguna/$idPenerima/Token');
     final snapshot = await ref.get();
     if (snapshot.exists) {
-      return snapshot.value.toString();
+      return snapshot.value.toString(); // Mengembalikan token FCM
     } else {
-      return '';
+      print("Token FCM untuk ID penerima ($idPenerima) tidak ditemukan.");
+      return ""; // Kembalikan string kosong jika token tidak ditemukan
     }
   }
 }
@@ -52,6 +54,8 @@ class _LayarBerandaState extends State<LayarBeranda> {
   String? statusPengguna;
   String idSaluran = ''; // Atur nilai awal default
   String idPemanggil = ''; // Atur nilai awal default
+
+  bool _dialogPanggilanAktif = false;
 
   Map<String, String> petaNamaPengguna = {}; // Menyimpan nama pengguna berdasarkan id
 
@@ -157,26 +161,6 @@ class _LayarBerandaState extends State<LayarBeranda> {
     }
   }
 
-  Future<String> _ambilTokenPenerima(String idPenerima) async {
-    final ref = FirebaseDatabase.instance.ref('pengguna/$idPenerima/token');
-    final snapshot = await ref.get();
-    if (snapshot.exists) {
-      return snapshot.value.toString();
-    } else {
-      return '';
-    }
-  }
-
-  Future<String> _ambilTokenPemanggil(String idPemanggil) async {
-    final ref = FirebaseDatabase.instance.ref('pengguna/$idPemanggil/token');
-    final snapshot = await ref.get();
-    if (snapshot.exists) {
-      return snapshot.value.toString();
-    } else {
-      return '';
-    }
-  }
-
   void perbaruiStatusPanggilan(
       String idSaluran,
       String idPemanggil,
@@ -222,6 +206,11 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
     // Listener untuk notifikasi saat aplikasi sedang aktif
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (_dialogPanggilanAktif) {
+        print("Dialog sudah aktif, mengabaikan notifikasi.");
+        return; // Abaikan jika dialog sedang aktif
+      }
+
       if (message.data['idSaluran'] != null) {
         _tanganiPanggilanMasuk(message.data);
       }
@@ -263,6 +252,9 @@ class _LayarBerandaState extends State<LayarBeranda> {
       'status': 'Panggilan Diterima',
     });
 
+    // Reset flag dialog saat berpindah layar
+    _dialogPanggilanAktif = false;
+
     // Navigasi ke layar menelpon
     Navigator.push(
       context,
@@ -279,46 +271,15 @@ class _LayarBerandaState extends State<LayarBeranda> {
     );
   }
 
-  void _kirimNotifikasiPanggilanDitolak({
-    required String tujuan, // Bisa token atau idPemanggil
-    required String idSaluran,
-    required bool menggunakanToken,
-  }) async {
-    try {
-      String token;
-      if (menggunakanToken) {
-        token = tujuan;
-      } else {
-        // Ambil token penerima berdasarkan id jika tidak menggunakan token langsung
-        token = await _ambilTokenPemanggil(tujuan);
-      }
-
-      // Kirim notifikasi menggunakan token yang telah diambil
-      await kirimNotifikasi(
-        token,
-        "Panggilan Ditolak",
-        "Panggilan Anda telah ditolak oleh penerima.",
-        {
-          'idSaluran': idSaluran,
-          'status': 'Panggilan Ditolak',
-        },
-      );
-
-      // Perbarui status panggilan di Firebase
-      final referensiRiwayat = FirebaseDatabase.instance
-          .ref('pengguna/$idPengguna/riwayatPanggilan/$idSaluran');
-      await referensiRiwayat.update({
-        'status': 'Panggilan Ditolak',
-        'waktu': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      print('Notifikasi penolakan berhasil dikirim.');
-    } catch (e) {
-      print('Error saat mengirim notifikasi penolakan: $e');
-    }
-  }
-
   void _tampilkanDialogPanggilanMasuk(Map<String, dynamic> data) async {
+    // Cek apakah dialog sudah aktif
+    if (_dialogPanggilanAktif) {
+      print("Dialog panggilan masuk sudah aktif. Mengabaikan notifikasi berikutnya.");
+      return; // Jangan tampilkan dialog jika sudah ada
+    }
+
+    _dialogPanggilanAktif = true; // Tandai bahwa dialog aktif
+
     String namaPemanggil = data['namaPemanggil'] ?? await _ambilNamaPengguna(data['idPemanggil']);
     showDialog(
       context: context,
@@ -331,17 +292,14 @@ class _LayarBerandaState extends State<LayarBeranda> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _kirimNotifikasiPanggilanDitolak(
-                  tujuan: data['idPemanggil'],
-                  idSaluran: data['idSaluran'],
-                  menggunakanToken: false,
-                );
+                _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
               },
               child: Text('Tolak'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
+                _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
                 _terimaPanggilan(data['idSaluran'], data['idPemanggil']);
               },
               child: Text('Angkat'),
@@ -566,7 +524,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
       });
 
       // Ambil FCM Token penerima
-      String tokenPenerima = await _ambilTokenPenerima(idPenerima);
+      String tokenPenerima = await Utils.ambilTokenPenerima(idPenerima);
 
       // Kirim notifikasi ke penerima
       await kirimNotifikasi(
