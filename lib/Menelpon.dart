@@ -155,16 +155,28 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   void _akhiriPanggilan(String pesan) {
-    final referensiPanggilan = FirebaseDatabase.instance.ref('panggilanAktif/${widget.idSaluran}');
-    referensiPanggilan.remove(); // Hapus panggilan dari Firebase
-    _penghitungDurasi?.cancel(); // Hentikan timer durasi
-    _timerTimeout?.cancel(); // Hentikan timer timeout
-    _mesinRTC.leaveChannel(); // Keluar dari channel
-    _mesinRTC.release(); // Lepaskan RTC resources
+    // Perbarui status di riwayat panggilan pengguna
+    final referensiRiwayatPemanggil = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPengguna}/riwayatPanggilan/${widget.idPanggilan}');
+    referensiRiwayatPemanggil.update({
+      'status': 'Panggilan Berakhir',
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
 
-    // Perbarui status ke Firebase
-    _perbaruiRiwayatStatus(widget.idPengguna, 'Panggilan Berakhir');
-    _perbaruiRiwayatStatus(widget.idPenerima, 'Panggilan Berakhir');
+    final referensiRiwayatPenerima = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}');
+    referensiRiwayatPenerima.update({
+      'status': 'Panggilan Berakhir',
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
+
+    // Hentikan penghitung durasi dan timer timeout
+    _penghitungDurasi?.cancel();
+    _timerTimeout?.cancel();
+
+    // Tinggalkan channel dan lepaskan resource RTC
+    _mesinRTC.leaveChannel();
+    _mesinRTC.release();
 
     // Kembali ke halaman beranda
     if (Navigator.of(context).canPop()) {
@@ -197,9 +209,32 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   Future<bool> _cekPanggilanAktif(String idSaluran) async {
-    final DatabaseReference referensiPanggilan = FirebaseDatabase.instance.ref('panggilanAktif/$idSaluran');
-    final DataSnapshot snapshot = await referensiPanggilan.get();
-    return snapshot.exists;
+    // Periksa status panggilan di riwayat pengguna (pemanggil dan penerima)
+    final DatabaseReference referensiPemanggil = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPengguna}/riwayatPanggilan/$idSaluran');
+    final DatabaseReference referensiPenerima = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/$idSaluran');
+
+    final DataSnapshot snapshotPemanggil = await referensiPemanggil.get();
+    final DataSnapshot snapshotPenerima = await referensiPenerima.get();
+
+    if (snapshotPemanggil.exists && snapshotPemanggil.value != null) {
+      final dataPemanggil = snapshotPemanggil.value as Map<dynamic, dynamic>;
+      if (dataPemanggil['status'] == 'Menghubungkan Panggilan' ||
+          dataPemanggil['status'] == 'Aktif') {
+        return true;
+      }
+    }
+
+    if (snapshotPenerima.exists && snapshotPenerima.value != null) {
+      final dataPenerima = snapshotPenerima.value as Map<dynamic, dynamic>;
+      if (dataPenerima['status'] == 'Menghubungkan Panggilan' ||
+          dataPenerima['status'] == 'Aktif') {
+        return true;
+      }
+    }
+
+    return false; // Tidak ada panggilan aktif ditemukan
   }
 
   Future<void> _tampilkanDialogAkhirPanggilan(String pesan) async {

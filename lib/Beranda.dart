@@ -16,6 +16,20 @@ const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
 const Color warnaTeksHitam = Color(0xFF0F0F0F);
 
+// FCM
+const Map<String, dynamic> firebaseServiceAccountKey = {
+  "type": "service_account",
+  "project_id": "stom-juscang",
+  "private_key_id": "f953e261a429a941ef55b293d58646ddcf1d95bf",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCaSFl2axeiytx3\n6jtzV348+QEoQdEE8LgikHOsuqk3olxHA9jivUcARbGLL0VQwzAWsoObb9f/e6SR\n2bQtqaZ9DvgVXMHN1/4ewJnJ701+2PhGm58TyYICmB7fvLlZ1RLnQqP9IJgz6Y6t\nmAFSPnKyoDkM3Lu/E8+6yG5FCQ4sFPP3MflIb6rMcnD0LSvOndSGkL07hiUS7sAS\nnkbNf6XvbYPL2nUvTbufTX4FNWaMIDq34Oq+a3F0x4IJzQI7mBHLp1DlXsW1VQvw\nRV6IB04/PnT4AIoaAyt7JWmg4cDMAkHV/pL8JTitUb1x9HPF506Pyx9hNrPPk1Zq\n0qcfVdO/AgMBAAECggEAAKhT8juckBritBXwi6Nq5Id9JdheudkFdNUEWAwi8WSv\nfRbZg1TrUp48eAVde4YJ0U9TyrEPXA6+M0+xJMXqNJD0UD3Z48oyUmtHMdjROJ2I\nieuLumuxpjm0deKNqm+n0wpZmLaaQPuHMrBYRp7cg3hsoHy3TAettFKV7eozj22H\nW2rcWx0AOt5a7hMdrJ/cmMsRCiaG09hkah+F1ZCXJ/Kfv2tYeJD7jc+OUxtnWnbB\nBVQpDcpk3HZiYZudBz5ppIgXqKeV90HyYKmoZweBr9VmNrV8JoQkGOESXEmby2Re\nkTIFUTAJYC0rgdFF1SJx4nH6qcjCnwgV6PeOQs2pdQKBgQDNY0v68JyTeGI2ey8a\nNHFMXRPny274ZCpx44uPG7MrWkYn2vI+oUqfSpacSUAYoYvCAgZXY8F3hXAXBpI/\n2AocNL9iaP7MpggVK85a/p3jBtrCGmwtFSfWWY4UCvJA8n7xCAStpGb9s3WqX3nu\nzkj2TmtGbX/8FpCUUVlW/dbwqwKBgQDATR/r/gZzx3LEY8hU7DGRAsyeByaUXqa8\n4Bx3t8gbupAPG52ST9azYR4ySNTeZMZkxqppaZ3Vtc9/chfDG+ZbduUja0gpx7zE\nim2dMTOD9fK+4Lx+MCtROnHoQL834N6i+POOTE+pv408b/i7+r8rjfGQ77P9PmAE\nBVHHpqlxPQKBgBq+sWgt6NWzOWbKx6lr5s0A2dS3Qu4JbRWDgerSupQMn1IVSrIp\nIqR3fAFB8JzEfIR46wZ6MPk1YRE+g9DYewiNPda8wWE4xZisKaTjvv+PJvFbq3Z7\naMKaysuFWWJnsWwFlUZfQCINOmdDI4ebSRj5wTJck+vprE4EAdQ4HcMdAoGAK4wL\nk4yF94gOBE04W4rVOqpwncSuxuCcT59MswuqRCU+ZD1ztGNiEmMGzIpTsj0N9FpM\n0uw48uFmKM00dlmGE+Zbw2aTA+sYY0WZxwQST2rN2s3XwZe054MdsmOfKc9Be5R2\nyx2a2KzpFeuhXyhMTFergY/WqZ2Lbr2ppFWof10CgYEAgq4z3bsM3CUaKNZTgA/8\nHz/pVw9XBjrmPJFbJfpvc1e64FoteU9bxX1if8e0Ir1EO7JMcvHeXhqCx4AWFwG1\nOlGP0ZWMfiCk5OAT39JWDpn3grNj+1GLcZ2XcLa0PF7/tnqxgrpzqpPqhVoxxCGx\nu7WcBF8/ji1m0jl/d4zeWoM=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-volux@stom-juscang.iam.gserviceaccount.com",
+  "client_id": "111762934565070538603",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-volux%40stom-juscang.iam.gserviceaccount.com",
+};
+
 class LayarBeranda extends StatefulWidget {
   @override
   _LayarBerandaState createState() => _LayarBerandaState();
@@ -39,6 +53,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
   void initState() {
     super.initState();
     _setupFirebaseMessaging();
+    _setupFCMListener();
     _mintaIzin();
     _ambilIdPengguna();
     _muatSemuaKontak();
@@ -69,6 +84,11 @@ class _LayarBerandaState extends State<LayarBeranda> {
       _muatDataPengguna(idPengguna!);
       _muatKontak();
       _muatRiwayatPanggilan();
+
+      // Simpan token FCM setelah mendapatkan idPengguna
+      await _simpanTokenFCM();
+    } else {
+      print("idPengguna tidak ditemukan di SharedPreferences");
     }
   }
 
@@ -97,6 +117,38 @@ class _LayarBerandaState extends State<LayarBeranda> {
         print("Error saat memuat semua kontak: $error");
       }
     });
+  }
+
+  void _setupFCMListener() {
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      if (idPengguna != null) {
+        // Perbarui token FCM di Firebase Realtime Database
+        await FirebaseDatabase.instance.ref('pengguna/$idPengguna').update({
+          'fcmToken': newToken,
+        });
+        print("Token FCM diperbarui untuk $idPengguna: $newToken");
+      } else {
+        print("idPengguna belum ditemukan saat token FCM diperbarui");
+      }
+    });
+  }
+
+  Future<void> _simpanTokenFCM() async {
+    try {
+      // Ambil token FCM dari Firebase Messaging
+      String? token = await FirebaseMessaging.instance.getToken();
+      if (token != null && idPengguna != null) {
+        // Simpan token FCM ke Firebase Realtime Database di bawah idPengguna
+        await FirebaseDatabase.instance.ref('pengguna/$idPengguna').update({
+          'fcmToken': token,
+        });
+        print("Token FCM berhasil disimpan untuk $idPengguna: $token");
+      } else {
+        print("Token FCM atau idPengguna tidak valid");
+      }
+    } catch (e) {
+      print("Error saat menyimpan token FCM: $e");
+    }
   }
 
   void perbaruiStatusPanggilan(
@@ -165,6 +217,15 @@ class _LayarBerandaState extends State<LayarBeranda> {
       'idSaluran': idSaluran,
       'idPemanggil': idPemanggil,
       'namaPemanggil': namaPemanggil,
+    });
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Pesan diterima: ${message.data}');
+      if (message.data['idSaluran'] != null) {
+        _tanganiPanggilanMasuk(message.data);
+      } else {
+        print("Data notifikasi tidak lengkap: ${message.data}");
+      }
     });
   }
 
@@ -241,18 +302,18 @@ class _LayarBerandaState extends State<LayarBeranda> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Tutup dialog
+              Navigator.of(context).pop();
               _kirimNotifikasiPanggilanDitolak(
-                tujuan: data['idPemanggil'], // ID pengguna atau token
-                idSaluran: data['idSaluran'], // ID saluran
-                menggunakanToken: false, // False karena `idPemanggil` adalah ID pengguna
+                tujuan: data['idPemanggil'],
+                idSaluran: data['idSaluran'],
+                menggunakanToken: false,
               );
             },
             child: Text('Tolak'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Tutup dialog
+              Navigator.of(context).pop();
               _terimaPanggilan(data['idSaluran'], data['idPemanggil']);
             },
             child: Text('Angkat'),
@@ -274,75 +335,72 @@ class _LayarBerandaState extends State<LayarBeranda> {
   Future<String> _ambilTokenPenerima(String idPenerima) async {
     final snapshot = await FirebaseDatabase.instance.ref('pengguna/$idPenerima').get();
 
-    // Cek apakah snapshot ada dan memiliki nilai
     if (snapshot.exists && snapshot.value != null) {
-      // Pastikan snapshot.value dikonversi ke Map
       final data = snapshot.value as Map<dynamic, dynamic>?;
-
-      // Cek apakah 'fcmToken' tersedia di data
       if (data != null && data.containsKey('fcmToken')) {
-        return data['fcmToken'] as String; // Ambil nilai 'fcmToken'
+        return data['fcmToken'] as String;
       }
     }
 
-    // Jika token tidak ditemukan, lempar exception
     throw Exception('Token tidak ditemukan untuk $idPenerima');
   }
 
   // Fungsi kirimNotifikasi di sini
   Future<void> kirimNotifikasi(
       String tokenPenerima, String judul, String isi, Map<String, String> map) async {
-    // Muat file Service Account Key
-    final serviceAccountKey = File('service-account-key.json');
-    final jsonKey = json.decode(await serviceAccountKey.readAsString());
+    try {
+      final jsonKey = firebaseServiceAccountKey;
 
-    // Dapatkan token otorisasi
-    final response = await http.post(
-      Uri.parse('https://oauth2.googleapis.com/token'),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: {
-        'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        'assertion': _generateJwt(jsonKey),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final accessToken = json.decode(response.body)['access_token'];
-
-      // Kirim notifikasi ke FCM
-      final notifikasi = {
-        'message': {
-          'token': tokenPenerima,
-          'notification': {
-            'title': judul,
-            'body': isi,
-          },
-        },
-      };
-
-      final fcmResponse = await http.post(
-        Uri.parse(
-            'https://fcm.googleapis.com/v1/projects/${jsonKey['project_id']}/messages:send'),
+      // Dapatkan token otorisasi
+      final response = await http.post(
+        Uri.parse('https://oauth2.googleapis.com/token'),
         headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: jsonEncode(notifikasi),
+        body: {
+          'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          'assertion': _generateJwt(jsonKey),
+        },
       );
 
-      if (fcmResponse.statusCode == 200) {
-        print('Notifikasi berhasil dikirim');
+      if (response.statusCode == 200) {
+        final accessToken = json.decode(response.body)['access_token'];
+
+        // Kirim notifikasi ke FCM
+        final notifikasi = {
+          'message': {
+            'token': tokenPenerima,
+            'notification': {
+              'title': judul,
+              'body': isi,
+            },
+          },
+        };
+
+        final fcmResponse = await http.post(
+          Uri.parse(
+              'https://fcm.googleapis.com/v1/projects/${jsonKey['project_id']}/messages:send'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(notifikasi),
+        );
+
+        if (fcmResponse.statusCode == 200) {
+          print('Notifikasi berhasil dikirim');
+        } else {
+          print('Gagal mengirim notifikasi: ${fcmResponse.body}');
+        }
       } else {
-        print('Gagal mengirim notifikasi: ${fcmResponse.body}');
+        print('Gagal mendapatkan token: ${response.body}');
       }
-    } else {
-      print('Gagal mendapatkan token: ${response.body}');
+    } catch (e) {
+      print("Error saat mengirim notifikasi: $e");
     }
   }
 
-// Fungsi untuk membuat JWT
+  // Fungsi untuk membuat JWT
   String _generateJwt(Map<String, dynamic> jsonKey) {
     // Header dan Claims
     final claims = {

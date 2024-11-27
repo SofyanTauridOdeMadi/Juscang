@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'Beranda.dart';
-import 'Otentikasi.dart';
 import 'package:flutter/services.dart';
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Menangani notifikasi ketika aplikasi di background
-  print('Pesan di background: ${message.messageId}');
-}
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'dart:async';
+import 'Beranda.dart';
+import 'Otentikasi.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -27,7 +22,7 @@ void main() async {
   runApp(AplikasiSaya());
 }
 
-// Definisi warna sesuai dengan palet yang diinginkan
+// Definisi warna tema
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
 const Color warnaKetiga = Color(0xFF855052);
@@ -106,18 +101,17 @@ class _LayarSplashState extends State<LayarSplash> with SingleTickerProviderStat
     if (!mounted) return; // Pastikan widget masih aktif sebelum melanjutkan
 
     if (pengguna != null) {
-      // Jika pengguna sudah login, navigasikan ke `LayarBeranda`
+      // Navigasikan ke `LayarBeranda`
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => LayarBeranda()),
       );
     } else {
-      // Jika pengguna belum login, navigasikan ke `LayarOtentikasi`
+      // Navigasikan ke `LayarOtentikasi`
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => LayarOtentikasi()),
       );
     }
   }
-
 
   @override
   void dispose() {
