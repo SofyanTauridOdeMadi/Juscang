@@ -37,14 +37,14 @@ class LayarMenelpon extends StatefulWidget {
 class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProviderStateMixin {
   late final RtcEngine _mesinRTC;
   late AnimationController _pengontrolAnimasi;
-  bool _pemanggilBergabung = false; // Status pemanggil bergabung
-  bool _penerimaBergabung = false; // Status penerima bergabung
-  bool _suaraDibisukan = false; // Status suara dimatikan
-  bool _kameraDimatikan = false; // Status kamera dimatikan
+  bool _pemanggilBergabung = false;
+  bool _penerimaBergabung = false;
+  bool _suaraDibisukan = false;
+  bool _kameraDimatikan = false;
   late String _idSaluran;
   final AudioPlayer _pemutarAudio = AudioPlayer();
-  Timer? _penghitungDurasi; // Timer untuk durasi panggilan
-  Timer? _timerTimeout; // Timer untuk timeout
+  Timer? _penghitungDurasi;
+  Timer? _timerTimeout;
   int _durasiPanggilan = 0;
 
   @override
@@ -55,16 +55,13 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
 
     _cekPanggilanAktif(widget.idSaluran).then((panggilanAktif) {
       if (panggilanAktif) {
-        // Jika panggilan sudah aktif, langsung sambungkan
         _mulaiPanggilan();
       } else {
-        // Jika belum ada panggilan aktif, buat yang baru
         _aturTimerTimeout();
         _putarSuaraMenunggu();
       }
     });
 
-    // Pantau status panggilan di Firebase
     FirebaseDatabase.instance
         .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}')
         .onValue
@@ -77,7 +74,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       }
     });
 
-    _aturTimerTimeout(); // Mulai timeout saat inisialisasi
     _pengontrolAnimasi = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -87,7 +83,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   Future<void> _putarSuaraMenunggu() async {
-    // Memutar suara menunggu secara berulang
     await _pemutarAudio.setReleaseMode(ReleaseMode.loop);
     await _pemutarAudio.play(AssetSource('MulaiTelpon.mp3'));
   }
@@ -96,7 +91,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     const appId = '23a0ce9df3984ae08b9301627b3aed68';
     const token = "";
 
-    _idSaluran = widget.idSaluran; // Gunakan idSaluran dari widget
+    _idSaluran = widget.idSaluran;
 
     _mesinRTC = createAgoraRtcEngine();
     await _mesinRTC.initialize(const RtcEngineContext(appId: appId));
@@ -114,7 +109,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
             _penerimaBergabung = true;
           });
 
-          // Jika kedua pihak bergabung, mulai panggilan
           if (_pemanggilBergabung && _penerimaBergabung) {
             _mulaiPanggilan();
           }
@@ -139,7 +133,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   void _aturTimerTimeout() {
-    _timerTimeout = Timer(Duration(seconds: 20), () {
+    _timerTimeout = Timer(Duration(seconds: 15), () {
       if (!_penerimaBergabung) {
         _pemutarAudio.stop();
         _akhiriPanggilan("Panggilan tidak terjawab.");
@@ -151,11 +145,9 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
 
   void _mulaiPanggilan() async {
     try {
-      // Ambil nama pemanggil dan penerima
       String namaPemanggil = await Utils.ambilNamaPengguna(widget.idPemanggil);
       String namaPenerima = await Utils.ambilNamaPengguna(widget.idPenerima);
 
-      // Perbarui struktur panggilan di Firebase
       await FirebaseDatabase.instance
           .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}')
           .set({
@@ -180,9 +172,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
         'waktu': DateTime.now().millisecondsSinceEpoch,
       });
 
-      print("Notifikasi panggilan berhasil dikirim ke penerima.");
-
-      // Mulai penghitungan durasi panggilan
       _pemutarAudio.stop();
       _timerTimeout?.cancel();
       _penghitungDurasi = Timer.periodic(Duration(seconds: 1), (timer) {
@@ -196,7 +185,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   void _akhiriPanggilan(String pesan) {
-    // Perbarui status di riwayat panggilan pengguna
     final referensiRiwayatPemanggil = FirebaseDatabase.instance
         .ref('pengguna/${widget.idPengguna}/riwayatPanggilan/${widget.idPanggilan}');
     referensiRiwayatPemanggil.update({
@@ -211,15 +199,12 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       'waktu': DateTime.now().millisecondsSinceEpoch,
     });
 
-    // Hentikan penghitung durasi dan timer timeout
     _penghitungDurasi?.cancel();
     _timerTimeout?.cancel();
 
-    // Tinggalkan channel dan lepaskan resource RTC
     _mesinRTC.leaveChannel();
     _mesinRTC.release();
 
-    // Kembali ke halaman beranda
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {
@@ -228,7 +213,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       );
     }
 
-    // Tampilkan dialog akhir jika ada pesan
     if (pesan.isNotEmpty) {
       _tampilkanDialogAkhirPanggilan(pesan);
     }
@@ -250,7 +234,6 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
   }
 
   Future<bool> _cekPanggilanAktif(String idSaluran) async {
-    // Periksa status panggilan di riwayat pengguna (pemanggil dan penerima)
     final DatabaseReference referensiPemanggil = FirebaseDatabase.instance
         .ref('pengguna/${widget.idPengguna}/riwayatPanggilan/$idSaluran');
     final DatabaseReference referensiPenerima = FirebaseDatabase.instance
@@ -275,7 +258,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       }
     }
 
-    return false; // Tidak ada panggilan aktif ditemukan
+    return false;
   }
 
   Future<void> _tampilkanDialogAkhirPanggilan(String pesan) async {
@@ -307,53 +290,40 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       body: Column(
         children: [
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Stack(
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: warnaSekunder,
-                  backgroundImage: NetworkImage(widget.avatarPengguna ?? 'https://robohash.org/default'),
-                ),
-                SizedBox(height: 18),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      // Video Remote
-                      AgoraVideoView(
-                        controller: VideoViewController.remote(
-                          rtcEngine: _mesinRTC,
-                          canvas: const VideoCanvas(uid: 1), // UID remote
-                          connection: RtcConnection(channelId: widget.idSaluran),
-                        ),
-                      ),
-                      // Video Lokal di Pojok
-                      Positioned(
-                        bottom: 10,
-                        right: 10,
-                        child: Container(
-                          width: 100,
-                          height: 150,
-                          child: AgoraVideoView(
-                            controller: VideoViewController(
-                              rtcEngine: _mesinRTC,
-                              canvas: const VideoCanvas(uid: 0), // UID lokal
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                _penerimaBergabung
+                    ? AgoraVideoView(
+                  controller: VideoViewController.remote(
+                    rtcEngine: _mesinRTC,
+                    canvas: const VideoCanvas(uid: 1),
+                    connection: RtcConnection(channelId: widget.idSaluran),
+                  ),
+                )
+                    : Center(
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: NetworkImage(widget.avatarPengguna ?? 'https://robohash.org/default'),
                   ),
                 ),
-                SizedBox(height: 18),
-                _pemanggilBergabung && _penerimaBergabung
-                    ? Text(
-                  'Durasi Panggilan: ${_formatDurasiPanggilan()}',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                )
-                    : Text(
-                  'Menunggu penerima bergabung...',
-                  style: TextStyle(fontSize: 20, color: Colors.grey),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: Container(
+                    width: 100,
+                    height: 150,
+                    child: _kameraDimatikan
+                        ? CircleAvatar(
+                      radius: 50,
+                      backgroundImage: NetworkImage(widget.avatarPengguna ?? 'https://robohash.org/default'),
+                    )
+                        : AgoraVideoView(
+                      controller: VideoViewController(
+                        rtcEngine: _mesinRTC,
+                        canvas: const VideoCanvas(uid: 0),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
