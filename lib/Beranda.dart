@@ -431,7 +431,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Membuat Panggilan Baru'),
+          title: Text('Panggilan Baru'),
           content: TextField(
             controller: pengontrolPanggilanCepat,
             decoration: InputDecoration(labelText: 'Masukkan ID Pengguna'),
