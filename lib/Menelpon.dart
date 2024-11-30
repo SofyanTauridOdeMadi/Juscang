@@ -7,7 +7,6 @@ import 'Beranda.dart';
 
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
-const Color warnaTeksHitam = Color(0xFF0F0F0F);
 
 class LayarMenelpon extends StatefulWidget {
   final String idPengguna;
@@ -15,7 +14,6 @@ class LayarMenelpon extends StatefulWidget {
   final String idPanggilan;
   final String namaPengguna;
   final String? avatarPengguna;
-
   final String idPemanggil;
   final String idSaluran;
 
@@ -34,52 +32,21 @@ class LayarMenelpon extends StatefulWidget {
   _LayarMenelponState createState() => _LayarMenelponState();
 }
 
-class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProviderStateMixin {
+class _LayarMenelponState extends State<LayarMenelpon> {
   late final RtcEngine _mesinRTC;
-  late AnimationController _pengontrolAnimasi;
-  bool _pemanggilBergabung = false;
-  bool _penerimaBergabung = false;
   bool _suaraDibisukan = false;
   bool _kameraDimatikan = false;
+  bool _penerimaBergabung = false;
+  int? _uidLokal;
+  int? _uidRemote;
   late String _idSaluran;
   final AudioPlayer _pemutarAudio = AudioPlayer();
-  Timer? _penghitungDurasi;
-  Timer? _timerTimeout;
-  int _durasiPanggilan = 0;
 
   @override
   void initState() {
     super.initState();
     _putarSuaraMenunggu();
     _inisialisasiAgora();
-
-    _cekPanggilanAktif(widget.idSaluran).then((panggilanAktif) {
-      if (panggilanAktif) {
-        _mulaiPanggilan();
-      } else {
-        _aturTimerTimeout();
-        _putarSuaraMenunggu();
-      }
-    });
-
-    FirebaseDatabase.instance
-        .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}')
-        .onValue
-        .listen((DatabaseEvent event) {
-      if (event.snapshot.exists) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>;
-        if (data['status'] == 'Panggilan Ditolak') {
-          _akhiriPanggilan("Panggilan ditolak oleh penerima.");
-        }
-      }
-    });
-
-    _pengontrolAnimasi = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-      lowerBound: 0.9,
-      upperBound: 1.0,
-    )..repeat(reverse: true);
   }
 
   Future<void> _putarSuaraMenunggu() async {
@@ -101,20 +68,23 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           setState(() {
-            _pemanggilBergabung = true;
+            _uidLokal = connection.localUid;
           });
+          print("onJoinChannelSuccess: UID Lokal = ${connection.localUid}");
         },
         onUserJoined: (RtcConnection connection, int uid, int elapsed) {
           setState(() {
+            _uidRemote = uid;
             _penerimaBergabung = true;
           });
-
-          if (_pemanggilBergabung && _penerimaBergabung) {
-            _mulaiPanggilan();
-          }
+          _pemutarAudio.stop();
+          print("onUserJoined: UID Remote = $uid");
         },
         onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
-          _akhiriPanggilan("Pengguna telah meninggalkan panggilan.");
+          setState(() {
+            _penerimaBergabung = false;
+          });
+          print("onUserOffline: UID Remote = $uid");
         },
       ),
     );
@@ -132,151 +102,46 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
     );
   }
 
-  void _aturTimerTimeout() {
-    _timerTimeout = Timer(Duration(seconds: 15), () {
-      if (!_penerimaBergabung) {
-        _pemutarAudio.stop();
-        _akhiriPanggilan("Panggilan tidak terjawab.");
-        _perbaruiRiwayatStatus(widget.idPengguna, 'Panggilan Tak Terjawab');
-        _perbaruiRiwayatStatus(widget.idPenerima, 'Panggilan Tak Terjawab');
-      }
-    });
-  }
-
-  void _mulaiPanggilan() async {
-    try {
-      String namaPemanggil = await Utils.ambilNamaPengguna(widget.idPemanggil);
-      String namaPenerima = await Utils.ambilNamaPengguna(widget.idPenerima);
-
-      await FirebaseDatabase.instance
-          .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}')
-          .set({
-        'idPemanggil': widget.idPemanggil,
-        'namaPemanggil': namaPemanggil,
-        'idPenerima': widget.idPenerima,
-        'namaPenerima': namaPenerima,
-        'idSaluran': widget.idSaluran,
-        'status': 'Menghubungkan Panggilan',
-        'waktu': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      await FirebaseDatabase.instance
-          .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}')
-          .set({
-        'idPemanggil': widget.idPemanggil,
-        'namaPemanggil': namaPemanggil,
-        'idPenerima': widget.idPenerima,
-        'namaPenerima': namaPenerima,
-        'idSaluran': widget.idSaluran,
-        'status': 'Menghubungkan Panggilan',
-        'waktu': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      _pemutarAudio.stop();
-      _timerTimeout?.cancel();
-      _penghitungDurasi = Timer.periodic(Duration(seconds: 1), (timer) {
-        setState(() {
-          _durasiPanggilan++;
-        });
-      });
-    } catch (e) {
-      print("Error saat memulai panggilan: $e");
-    }
-  }
-
-  void _akhiriPanggilan(String pesan) {
-    final referensiRiwayatPemanggil = FirebaseDatabase.instance
-        .ref('pengguna/${widget.idPengguna}/riwayatPanggilan/${widget.idPanggilan}');
-    referensiRiwayatPemanggil.update({
-      'status': 'Panggilan Berakhir',
-      'waktu': DateTime.now().millisecondsSinceEpoch,
-    });
-
-    final referensiRiwayatPenerima = FirebaseDatabase.instance
-        .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}');
-    referensiRiwayatPenerima.update({
-      'status': 'Panggilan Berakhir',
-      'waktu': DateTime.now().millisecondsSinceEpoch,
-    });
-
-    _penghitungDurasi?.cancel();
-    _timerTimeout?.cancel();
-
-    _mesinRTC.leaveChannel();
-    _mesinRTC.release();
-
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => LayarBeranda()),
-      );
-    }
-
-    if (pesan.isNotEmpty) {
-      _tampilkanDialogAkhirPanggilan(pesan);
-    }
-  }
-
-  void _perbaruiRiwayatStatus(String idPengguna, String status) {
-    final referensiRiwayat = FirebaseDatabase.instance
-        .ref('pengguna/$idPengguna/riwayatPanggilan/${widget.idPanggilan}');
-    referensiRiwayat.update({
-      'status': status,
-      'waktu': DateTime.now().millisecondsSinceEpoch,
-    });
-  }
-
-  String _formatDurasiPanggilan() {
-    final menit = (_durasiPanggilan / 60).floor().toString().padLeft(2, '0');
-    final detik = (_durasiPanggilan % 60).toString().padLeft(2, '0');
-    return "$menit:$detik";
-  }
-
-  Future<bool> _cekPanggilanAktif(String idSaluran) async {
-    final DatabaseReference referensiPemanggil = FirebaseDatabase.instance
-        .ref('pengguna/${widget.idPengguna}/riwayatPanggilan/$idSaluran');
-    final DatabaseReference referensiPenerima = FirebaseDatabase.instance
-        .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/$idSaluran');
-
-    final DataSnapshot snapshotPemanggil = await referensiPemanggil.get();
-    final DataSnapshot snapshotPenerima = await referensiPenerima.get();
-
-    if (snapshotPemanggil.exists && snapshotPemanggil.value != null) {
-      final dataPemanggil = snapshotPemanggil.value as Map<dynamic, dynamic>;
-      if (dataPemanggil['status'] == 'Menghubungkan Panggilan' ||
-          dataPemanggil['status'] == 'Aktif') {
-        return true;
-      }
-    }
-
-    if (snapshotPenerima.exists && snapshotPenerima.value != null) {
-      final dataPenerima = snapshotPenerima.value as Map<dynamic, dynamic>;
-      if (dataPenerima['status'] == 'Menghubungkan Panggilan' ||
-          dataPenerima['status'] == 'Aktif') {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  Future<void> _tampilkanDialogAkhirPanggilan(String pesan) async {
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Panggilan Berakhir'),
-        content: Text(pesan),
-        actions: [
-          TextButton(
-            child: Text('OK', style: TextStyle(color: warnaUtama)),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+  Widget _buildVideoView() {
+    if (_uidRemote != null && _penerimaBergabung) {
+      return Stack(
+        children: [
+          Expanded(
+            child: AgoraVideoView(
+              controller: VideoViewController.remote(
+                rtcEngine: _mesinRTC,
+                canvas: VideoCanvas(uid: _uidRemote!),
+                connection: RtcConnection(channelId: _idSaluran),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: SizedBox(
+              width: 100,
+              height: 150,
+              child: AgoraVideoView(
+                controller: VideoViewController(
+                  rtcEngine: _mesinRTC,
+                  canvas: VideoCanvas(uid: _uidLokal ?? 0),
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-    );
+      );
+    } else {
+      return Center(
+        child: CircleAvatar(
+          radius: 50,
+          backgroundImage: NetworkImage(
+            widget.avatarPengguna ?? 'https://robohash.org/default',
+          ),
+          backgroundColor: warnaSekunder,
+        ),
+      );
+    }
   }
 
   @override
@@ -289,45 +154,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       ),
       body: Column(
         children: [
-          Expanded(
-            child: Stack(
-              children: [
-                _penerimaBergabung
-                    ? AgoraVideoView(
-                  controller: VideoViewController.remote(
-                    rtcEngine: _mesinRTC,
-                    canvas: const VideoCanvas(uid: 1),
-                    connection: RtcConnection(channelId: widget.idSaluran),
-                  ),
-                )
-                    : Center(
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: NetworkImage(widget.avatarPengguna ?? 'https://robohash.org/default'),
-                  ),
-                ),
-                Positioned(
-                  bottom: 10,
-                  right: 10,
-                  child: Container(
-                    width: 100,
-                    height: 150,
-                    child: _kameraDimatikan
-                        ? CircleAvatar(
-                      radius: 50,
-                      backgroundImage: NetworkImage(widget.avatarPengguna ?? 'https://robohash.org/default'),
-                    )
-                        : AgoraVideoView(
-                      controller: VideoViewController(
-                        rtcEngine: _mesinRTC,
-                        canvas: const VideoCanvas(uid: 0),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _buildVideoView()),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -359,7 +186,7 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
                 ),
                 IconButton(
                   icon: Icon(Icons.call_end, color: warnaUtama),
-                  onPressed: () => _akhiriPanggilan("Panggilan diakhiri."),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
@@ -371,12 +198,9 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
 
   @override
   void dispose() {
-    _penghitungDurasi?.cancel();
-    _timerTimeout?.cancel();
     _pemutarAudio.dispose();
     _mesinRTC.leaveChannel();
     _mesinRTC.release();
-    _pengontrolAnimasi.dispose();
     super.dispose();
   }
 }

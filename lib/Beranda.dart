@@ -275,30 +275,44 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   void _terimaPanggilan(String idSaluran, String idPemanggil) async {
-    // Simpan status "Panggilan Diterima" ke Firebase
-    final referensiRiwayat = FirebaseDatabase.instance
-        .ref('pengguna/$idPengguna/riwayatPanggilan/$idSaluran');
-    referensiRiwayat.update({
-      'status': 'Panggilan Diterima',
-    });
+    try {
+      // Ambil nama pemanggil dari Firebase
+      final DataSnapshot snapshotPemanggil = await FirebaseDatabase.instance
+          .ref('pengguna/$idPemanggil/namaPengguna')
+          .get();
 
-    // Reset flag dialog saat berpindah layar
-    _dialogPanggilanAktif = false;
+      String namaPemanggil = snapshotPemanggil.exists
+          ? snapshotPemanggil.value.toString()
+          : 'Nama Tidak Diketahui';
 
-    // Navigasi ke layar menelpon
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LayarMenelpon(
-          idPengguna: idPengguna!,
-          idSaluran: idSaluran,
-          idPemanggil: idPemanggil,
-          idPenerima: idPengguna!,
-          idPanggilan: idSaluran, // idPanggilan sama dengan idSaluran
-          namaPengguna: 'Nama Pemanggil', // Ambil nama pemanggil dari data
+      // Simpan status "Panggilan Diterima" ke Firebase
+      final referensiRiwayat = FirebaseDatabase.instance
+          .ref('pengguna/$idPengguna/riwayatPanggilan/$idSaluran');
+      await referensiRiwayat.update({
+        'status': 'Panggilan Diterima',
+      });
+
+      // Reset flag dialog saat berpindah layar
+      _dialogPanggilanAktif = false;
+
+      // Navigasi ke layar menelpon dengan UID dan informasi pengguna
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LayarMenelpon(
+            idPengguna: idPengguna!, // ID lokal pengguna
+            idSaluran: idSaluran,   // Saluran Agora
+            idPemanggil: idPemanggil, // ID pemanggil
+            idPenerima: idPengguna!, // ID penerima
+            idPanggilan: idSaluran, // ID panggilan (bisa sama dengan saluran)
+            namaPengguna: namaPemanggil, // Nama dinamis dari pemanggil
+            avatarPengguna: null, // Tambahkan avatar jika tersedia
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      print("Error saat menerima panggilan: $e");
+    }
   }
 
   void _tampilkanDialogPanggilanMasuk(Map<String, dynamic> data) async {
