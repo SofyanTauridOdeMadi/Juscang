@@ -244,6 +244,36 @@ class _LayarBerandaState extends State<LayarBeranda> {
     });
   }
 
+  void tolakPanggilan(String idSaluran, String idPemanggil, String idPenerima) async {
+    try {
+      // Update status panggilan di Firebase untuk pemanggil
+      final referensiRiwayatPemanggil = FirebaseDatabase.instance
+          .ref('pengguna/$idPemanggil/riwayatPanggilan/$idSaluran');
+      await referensiRiwayatPemanggil.update({
+        'status': 'Panggilan Ditolak',
+        'waktu': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // Update status panggilan di Firebase untuk penerima
+      final referensiRiwayatPenerima = FirebaseDatabase.instance
+          .ref('pengguna/$idPenerima/riwayatPanggilan/$idSaluran');
+      await referensiRiwayatPenerima.update({
+        'status': 'Panggilan Ditolak',
+        'waktu': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      print("Panggilan ditolak untuk saluran $idSaluran");
+    } catch (e) {
+      print("Error saat menolak panggilan: $e");
+    }
+
+    // Tutup dialog panggilan masuk
+    if (_dialogPanggilanAktif) {
+      Navigator.of(context).pop();
+      _dialogPanggilanAktif = false;
+    }
+  }
+
   void _terimaPanggilan(String idSaluran, String idPemanggil) async {
     // Simpan status "Panggilan Diterima" ke Firebase
     final referensiRiwayat = FirebaseDatabase.instance
@@ -293,6 +323,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
               onPressed: () {
                 Navigator.of(context).pop();
                 _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
+                tolakPanggilan(data['idSaluran'], data['idPemanggil'], idPengguna!);
               },
               child: Text('Tolak', style: TextStyle(color: warnaUtama)),
             ),

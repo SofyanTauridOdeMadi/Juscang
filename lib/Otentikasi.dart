@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+
 import 'Beranda.dart';
 
 class LayarOtentikasi extends StatefulWidget {
@@ -16,7 +19,7 @@ class _LayarOtentikasiState extends State<LayarOtentikasi> {
   final TextEditingController _penggunaController = TextEditingController();
   final TextEditingController _kataSandiController = TextEditingController();
 
-  // Warna kustom dan font untuk konsistensi
+  // Warna tema
   final Color warnaUtama = Color(0xFF690909);
   final Color warnaLatar = Color(0xFFCEB9BA);
   final Color warnaIsiInput = Color(0xFFF5F5F5);
@@ -52,15 +55,13 @@ class _LayarOtentikasiState extends State<LayarOtentikasi> {
           password: _kataSandiController.text,
         );
 
-        // Simpan ke Firebase Realtime Database setelah pendaftaran
-        // Gunakan `idPengguna` dari input pengguna sebagai kunci data di Firebase Realtime Database
         DatabaseReference referensiPengguna = _database.child('pengguna/$idPengguna');
 
         // Simpan detail pengguna
         await referensiPengguna.set({
           'idPengguna': idPengguna,
           'namaPengguna': kredensialPengguna.user!.email,
-          'statusPengguna': 'Hai!, Saya menggunakan Juscang',
+          'statusPengguna': 'Hai, Saya menggunakan Juscang',
         });
       }
 

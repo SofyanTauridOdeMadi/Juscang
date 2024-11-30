@@ -65,6 +65,19 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       }
     });
 
+    // Pantau status panggilan di Firebase
+    FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}')
+        .onValue
+        .listen((DatabaseEvent event) {
+      if (event.snapshot.exists) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        if (data['status'] == 'Panggilan Ditolak') {
+          _akhiriPanggilan("Panggilan ditolak oleh penerima.");
+        }
+      }
+    });
+
     _aturTimerTimeout(); // Mulai timeout saat inisialisasi
     _pengontrolAnimasi = AnimationController(
       vsync: this,
