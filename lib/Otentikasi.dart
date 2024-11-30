@@ -60,7 +60,7 @@ class _LayarOtentikasiState extends State<LayarOtentikasi> {
         await referensiPengguna.set({
           'idPengguna': idPengguna,
           'namaPengguna': kredensialPengguna.user!.email,
-          'statusPengguna': 'Belum Diatur',
+          'statusPengguna': 'Hai!, Saya menggunakan Juscang',
         });
       }
 
