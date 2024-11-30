@@ -120,6 +120,8 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
       options: const ChannelMediaOptions(
         channelProfile: ChannelProfileType.channelProfileCommunication,
         clientRoleType: ClientRoleType.clientRoleBroadcaster,
+        publishCameraTrack: true,
+        publishMicrophoneTrack: true,
       ),
     );
   }
@@ -319,9 +321,37 @@ class _LayarMenelponState extends State<LayarMenelpon> with SingleTickerProvider
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: warnaSekunder,
-                  backgroundImage: widget.avatarPengguna != null
-                      ? NetworkImage(widget.avatarPengguna!)
-                      : AssetImage('assets/default_avatar.png') as ImageProvider,
+                  backgroundImage: NetworkImage(widget.avatarPengguna ?? 'https://robohash.org/default'),
+                ),
+                SizedBox(height: 18),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      // Video Remote
+                      AgoraVideoView(
+                        controller: VideoViewController.remote(
+                          rtcEngine: _mesinRTC,
+                          canvas: const VideoCanvas(uid: 1), // UID remote
+                          connection: RtcConnection(channelId: widget.idSaluran),
+                        ),
+                      ),
+                      // Video Lokal di Pojok
+                      Positioned(
+                        bottom: 10,
+                        right: 10,
+                        child: Container(
+                          width: 100,
+                          height: 150,
+                          child: AgoraVideoView(
+                            controller: VideoViewController(
+                              rtcEngine: _mesinRTC,
+                              canvas: const VideoCanvas(uid: 0), // UID lokal
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 18),
                 _pemanggilBergabung && _penerimaBergabung
