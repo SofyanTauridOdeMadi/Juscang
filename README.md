@@ -35,11 +35,11 @@
 ---
 
 ## 📂 **Struktur Folder**
-/lib                      # Kode sumber untuk UI, logika bisnis, dan layanan backend
-/android                  # Konfigurasi proyek Android
-/ios                      # Konfigurasi proyek iOS
-/assets                   # Aset statis (gambar, ikon, dll.)
-/firebase-messaging-sw.js # Service worker untuk notifikasi push di web
+1. /lib                      # Kode sumber untuk UI, logika bisnis, dan layanan backend
+2. /android                  # Konfigurasi proyek Android
+3. /ios                      # Konfigurasi proyek iOS
+4. /assets                   # Aset statis (gambar, ikon, dll.)
+5. /firebase-messaging-sw.js # Service worker untuk notifikasi push di web
 
 ---
 
@@ -94,8 +94,3 @@ Melalui **Juscang**, kami ingin menjembatani kebutuhan komunikasi dengan menyedi
 
 💡 **Kontribusi**  
 Kami terbuka untuk kontribusi! Silakan fork repository ini, kirimkan PR, atau beri masukan fitur baru.
-
----
-
-### 🤝 **Hubungi Kami**
-Ikuti perjalanan pengembangan dan pembaruan di [GitHub](https://github.com) atau hubungi kami di support@juscang.com.
