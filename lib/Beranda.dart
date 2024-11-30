@@ -294,7 +294,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
                 Navigator.of(context).pop();
                 _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
               },
-              child: Text('Tolak'),
+              child: Text('Tolak', style: TextStyle(color: warnaUtama)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -302,7 +302,8 @@ class _LayarBerandaState extends State<LayarBeranda> {
                 _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
                 _terimaPanggilan(data['idSaluran'], data['idPemanggil']);
               },
-              child: Text('Angkat'),
+              style: ElevatedButton.styleFrom(backgroundColor: warnaUtama),
+              child: Text('Terima', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -494,8 +495,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
       // Buat idSaluran unik
       String idSaluran = "$idPengguna-$idPenerima-${DateTime.now().millisecondsSinceEpoch}";
-      String waktuUnik = DateTime.now().millisecondsSinceEpoch.toString();
-      _idPanggilan = waktuUnik; // Setel ID panggilan
+      _idPanggilan = "$idPengguna-$idPenerima-${DateTime.now().millisecondsSinceEpoch}";
 
       // Simpan riwayat panggilan untuk pemanggil
       final referensiRiwayatPemanggil = FirebaseDatabase.instance
