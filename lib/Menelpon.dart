@@ -40,6 +40,10 @@ class _LayarMenelponState extends State<LayarMenelpon> {
   int? _uidLokal;
   int? _uidRemote;
   late String _idSaluran;
+  Timer? _timerTimeout;
+  Timer? _penghitungDurasi;
+  int _durasiPanggilan = 0;
+
   final AudioPlayer _pemutarAudio = AudioPlayer();
 
   @override
@@ -47,6 +51,7 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     super.initState();
     _putarSuaraMenunggu();
     _inisialisasiAgora();
+    _aturTimerTimeout();
   }
 
   Future<void> _putarSuaraMenunggu() async {
@@ -79,6 +84,7 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           });
           _pemutarAudio.stop();
           print("onUserJoined: UID Remote = $uid");
+          _mulaiPenghitungDurasi();
         },
         onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
           setState(() {
@@ -102,45 +108,40 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     );
   }
 
-  Widget _buildVideoView() {
-    if (_uidRemote != null && _penerimaBergabung) {
-      return Stack(
-        children: [
-          Expanded(
-            child: AgoraVideoView(
-              controller: VideoViewController.remote(
-                rtcEngine: _mesinRTC,
-                canvas: VideoCanvas(uid: _uidRemote!),
-                connection: RtcConnection(channelId: _idSaluran),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: SizedBox(
-              width: 100,
-              height: 150,
-              child: AgoraVideoView(
-                controller: VideoViewController(
-                  rtcEngine: _mesinRTC,
-                  canvas: VideoCanvas(uid: _uidLokal ?? 0),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return Center(
-        child: CircleAvatar(
-          radius: 50,
-          backgroundImage: NetworkImage(
-            widget.avatarPengguna ?? 'https://robohash.org/default',
-          ),
-          backgroundColor: warnaSekunder,
-        ),
-      );
+  void _aturTimerTimeout() {
+    _timerTimeout = Timer(Duration(seconds: 15), () {
+      if (!_penerimaBergabung) {
+        _pemutarAudio.stop();
+        _akhiriPanggilan("Panggilan tidak terjawab.");
+      }
+    });
+  }
+
+  void _mulaiPenghitungDurasi() {
+    _penghitungDurasi = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        _durasiPanggilan++;
+      });
+    });
+  }
+
+  String _formatDurasiPanggilan() {
+    final menit = (_durasiPanggilan ~/ 60).toString().padLeft(2, '0');
+    final detik = (_durasiPanggilan % 60).toString().padLeft(2, '0');
+    return "$menit:$detik";
+  }
+
+  void _akhiriPanggilan(String pesan) {
+    _penghitungDurasi?.cancel();
+    _timerTimeout?.cancel();
+    _mesinRTC.leaveChannel();
+    _mesinRTC.release();
+
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (pesan.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
     }
   }
 
@@ -149,46 +150,104 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: warnaUtama,
-        title: Text(widget.namaPengguna),
+        title: Text(
+          widget.idPengguna == widget.idPemanggil ? widget.namaPengguna : "Nama Pemanggil",
+          style: TextStyle(color: Colors.white),
+        ),
         automaticallyImplyLeading: false,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(child: _buildVideoView()),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    _suaraDibisukan ? Icons.mic_off : Icons.mic,
-                    color: warnaUtama,
+          // Video remote (penerima) memenuhi layar
+          Positioned.fill(
+            child: _uidRemote != null && _penerimaBergabung
+                ? AgoraVideoView(
+              controller: VideoViewController.remote(
+                rtcEngine: _mesinRTC,
+                canvas: VideoCanvas(uid: _uidRemote!),
+                connection: RtcConnection(channelId: _idSaluran),
+              ),
+            )
+                : Center(
+              child: CircleAvatar(
+                radius: 50,
+                backgroundImage: NetworkImage(
+                  widget.avatarPengguna ?? 'https://robohash.org/default',
+                ),
+                backgroundColor: warnaSekunder,
+              ),
+            ),
+          ),
+          // Video lokal (pemanggil) kecil di pojok kanan bawah
+          Positioned(
+            bottom: 16,
+            right: 16,
+            width: 100,
+            height: 150,
+            child: _kameraDimatikan
+                ? CircleAvatar(
+              radius: 50,
+              backgroundImage: NetworkImage(
+                widget.avatarPengguna ?? 'https://robohash.org/default',
+              ),
+              backgroundColor: warnaSekunder,
+            )
+                : AgoraVideoView(
+              controller: VideoViewController(
+                rtcEngine: _mesinRTC,
+                canvas: VideoCanvas(uid: _uidLokal ?? 0),
+              ),
+            ),
+          ),
+          // Kontrol dan status
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _durasiPanggilan > 0
+                        ? "Durasi: ${_formatDurasiPanggilan()}"
+                        : "Menunggu penerima...",
+                    style: TextStyle(color: Colors.white),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _suaraDibisukan = !_suaraDibisukan;
-                    });
-                    _mesinRTC.muteLocalAudioStream(_suaraDibisukan);
-                  },
-                ),
-                IconButton(
-                  icon: Icon(
-                    _kameraDimatikan ? Icons.videocam_off : Icons.videocam,
-                    color: warnaUtama,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _suaraDibisukan ? Icons.mic_off : Icons.mic,
+                          color: warnaUtama,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _suaraDibisukan = !_suaraDibisukan;
+                          });
+                          _mesinRTC.muteLocalAudioStream(_suaraDibisukan);
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _kameraDimatikan ? Icons.videocam_off : Icons.videocam,
+                          color: warnaUtama,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _kameraDimatikan = !_kameraDimatikan;
+                          });
+                          _mesinRTC.muteLocalVideoStream(_kameraDimatikan);
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.call_end, color: warnaUtama),
+                        onPressed: () => _akhiriPanggilan("Panggilan diakhiri."),
+                      ),
+                    ],
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _kameraDimatikan = !_kameraDimatikan;
-                    });
-                    _mesinRTC.muteLocalVideoStream(_kameraDimatikan);
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.call_end, color: warnaUtama),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -199,6 +258,8 @@ class _LayarMenelponState extends State<LayarMenelpon> {
   @override
   void dispose() {
     _pemutarAudio.dispose();
+    _penghitungDurasi?.cancel();
+    _timerTimeout?.cancel();
     _mesinRTC.leaveChannel();
     _mesinRTC.release();
     super.dispose();
