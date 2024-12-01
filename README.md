@@ -1,4 +1,7 @@
 # 🌐 **Juscang** - Aplikasi Komunikasi Real-Time
+<div align="center">
+  <img src="assets/logo.png" alt="Juscang Cover" width="500">
+</div>
 
 **Juscang** adalah aplikasi komunikasi generasi terbaru yang memungkinkan pengguna untuk terhubung dan berinteraksi secara efisien antar perangkat. Dengan teknologi real-time terkini, Juscang memberikan pengalaman komunikasi yang mulus melalui antarmuka yang intuitif dan ramah pengguna.
 
