@@ -3,7 +3,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
-import 'Beranda.dart';
 
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
@@ -42,8 +41,8 @@ class _LayarMenelponState extends State<LayarMenelpon> {
   late String _idSaluran;
   Timer? _timerTimeout;
   Timer? _penghitungDurasi;
+  Offset _previewPosition = Offset(16, 16); // Posisi default preview
   int _durasiPanggilan = 0;
-
   final AudioPlayer _pemutarAudio = AudioPlayer();
 
   @override
@@ -52,6 +51,7 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     _putarSuaraMenunggu();
     _inisialisasiAgora();
     _aturTimerTimeout();
+    _perbaruiStatus("Memulai Panggilan");
   }
 
   Future<void> _putarSuaraMenunggu() async {
@@ -85,10 +85,12 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           _pemutarAudio.stop();
           print("onUserJoined: UID Remote = $uid");
           _mulaiPenghitungDurasi();
+          _perbaruiStatus("Dalam Panggilan");
         },
         onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
           setState(() {
             _penerimaBergabung = false;
+            _uidRemote = null;
           });
           print("onUserOffline: UID Remote = $uid");
         },
@@ -131,7 +133,24 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     return "$menit:$detik";
   }
 
+  void _perbaruiStatus(String status) {
+    final referensiPemanggil = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}');
+    referensiPemanggil.update({
+      'status': status,
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
+
+    final referensiPenerima = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}');
+    referensiPenerima.update({
+      'status': status,
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
   void _akhiriPanggilan(String pesan) {
+    _perbaruiStatus("Panggilan Berakhir");
     _penghitungDurasi?.cancel();
     _timerTimeout?.cancel();
     _mesinRTC.leaveChannel();
@@ -141,24 +160,22 @@ class _LayarMenelponState extends State<LayarMenelpon> {
       Navigator.of(context).pop();
     }
     if (pesan.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(pesan, style: TextStyle(color: Colors.white)),
+          backgroundColor: warnaUtama,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: warnaUtama,
-        title: Text(
-          widget.idPengguna == widget.idPemanggil ? widget.namaPengguna : "Nama Pemanggil",
-          style: TextStyle(color: Colors.white),
-        ),
-        automaticallyImplyLeading: false,
-      ),
       body: Stack(
         children: [
-          // Video remote (penerima) memenuhi layar
+          // Video penerima atau avatar penerima
           Positioned.fill(
             child: _uidRemote != null && _penerimaBergabung
                 ? AgoraVideoView(
@@ -169,37 +186,61 @@ class _LayarMenelponState extends State<LayarMenelpon> {
               ),
             )
                 : Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundImage: NetworkImage(
-                  widget.avatarPengguna ?? 'https://robohash.org/default',
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: NetworkImage(
+                      widget.avatarPengguna ?? 'https://robohash.org/default',
+                    ),
+                    backgroundColor: warnaSekunder,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    widget.namaPengguna,
+                    style: TextStyle(
+                      color: warnaUtama,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Video lokal (pemanggil) kecil yang bisa dipindahkan
+          AnimatedPositioned(
+            duration: Duration(milliseconds: 300),
+            left: _previewPosition.dx,
+            top: _previewPosition.dy,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _previewPosition += details.delta;
+                });
+              },
+              child: SizedBox(
+                width: 100,
+                height: 150,
+                child: _kameraDimatikan
+                    ? CircleAvatar(
+                  radius: 50,
+                  backgroundImage: NetworkImage(
+                    widget.avatarPengguna ?? 'https://robohash.org/default',
+                  ),
+                  backgroundColor: warnaSekunder,
+                )
+                    : AgoraVideoView(
+                  controller: VideoViewController(
+                    rtcEngine: _mesinRTC,
+                    canvas: VideoCanvas(uid: _uidLokal ?? 0),
+                  ),
                 ),
-                backgroundColor: warnaSekunder,
               ),
             ),
           ),
-          // Video lokal (pemanggil) kecil di pojok kanan bawah
-          Positioned(
-            bottom: 16,
-            right: 16,
-            width: 100,
-            height: 150,
-            child: _kameraDimatikan
-                ? CircleAvatar(
-              radius: 50,
-              backgroundImage: NetworkImage(
-                widget.avatarPengguna ?? 'https://robohash.org/default',
-              ),
-              backgroundColor: warnaSekunder,
-            )
-                : AgoraVideoView(
-              controller: VideoViewController(
-                rtcEngine: _mesinRTC,
-                canvas: VideoCanvas(uid: _uidLokal ?? 0),
-              ),
-            ),
-          ),
-          // Kontrol dan status
+          // Kontrol
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
