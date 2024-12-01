@@ -100,24 +100,26 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           setState(() {
             _uidLokal = connection.localUid;
           });
+          print("Berhasil bergabung ke saluran: ${connection.channelId}");
         },
         onUserJoined: (RtcConnection connection, int uid, int elapsed) {
           setState(() {
             _uidRemote = uid;
             _penerimaBergabung = true;
           });
+          print("Pengguna lain bergabung ke saluran dengan UID: $uid");
           _pemutarAudio.stop();
           _mulaiPenghitungDurasi();
           _perbaruiStatus("Dalam Panggilan");
         },
         onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
+          print("Pengguna lain meninggalkan saluran dengan UID: $uid, alasan: $reason");
           if (uid == _uidRemote) {
             setState(() {
               _penerimaBergabung = false;
               _uidRemote = null;
             });
 
-            // Akhiri panggilan jika pengguna lain meninggalkan saluran
             if (reason == UserOfflineReasonType.userOfflineQuit) {
               _akhiriPanggilan("Pengguna meninggalkan panggilan.");
             } else {
@@ -126,6 +128,7 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           }
         },
         onUserMuteVideo: (RtcConnection connection, int uid, bool muted) {
+          print("Pengguna ${muted ? "mematikan" : "menyalakan"} kamera dengan UID: $uid");
           if (uid == _uidRemote) {
             setState(() {
               _kameraRemoteDimatikan = muted;
@@ -156,7 +159,13 @@ class _LayarMenelponState extends State<LayarMenelpon> {
   void _aturTimerTimeout() {
     _timerTimeout = Timer(Duration(seconds: 15), () {
       if (!_penerimaBergabung) {
+        // Hentikan audio menunggu
         _pemutarAudio.stop();
+
+        // Perbarui status di Firebase menjadi "Panggilan Tak Terjawab"
+        _perbaruiStatus("Panggilan Tak Terjawab");
+
+        // Akhiri panggilan
         _akhiriPanggilan("Panggilan tidak terjawab.");
       }
     });
