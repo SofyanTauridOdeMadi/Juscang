@@ -244,32 +244,49 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
   void tolakPanggilan(String idSaluran, String idPemanggil, String idPenerima) async {
     try {
-      // Update status panggilan di Firebase untuk pemanggil
-      final referensiRiwayatPemanggil = FirebaseDatabase.instance
+      // Ambil nama pengguna untuk pemanggil
+      String namaPemanggil = await _ambilNamaPengguna(idPemanggil);
+
+      // Ambil nama pengguna untuk penerima
+      String namaPenerima = await _ambilNamaPengguna(idPenerima);
+
+      // Perbarui status panggilan di database
+      DatabaseReference referensiPanggilanPemanggil = FirebaseDatabase.instance
           .ref('pengguna/$idPemanggil/riwayatPanggilan/$idSaluran');
-      await referensiRiwayatPemanggil.update({
+      await referensiPanggilanPemanggil.update({
         'status': 'Panggilan Ditolak',
-        'waktu': DateTime.now().millisecondsSinceEpoch,
+        'namaPenerima': namaPenerima,
+        'namaPemanggil': namaPemanggil,
       });
-      print("Status di pemanggil diperbarui ke 'Panggilan Ditolak'");
 
-      // Update status panggilan di Firebase untuk penerima
-      final referensiRiwayatPenerima = FirebaseDatabase.instance
+      DatabaseReference referensiPanggilanPenerima = FirebaseDatabase.instance
           .ref('pengguna/$idPenerima/riwayatPanggilan/$idSaluran');
-      await referensiRiwayatPenerima.update({
+      await referensiPanggilanPenerima.update({
         'status': 'Panggilan Ditolak',
-        'waktu': DateTime.now().millisecondsSinceEpoch,
+        'namaPenerima': namaPenerima,
+        'namaPemanggil': namaPemanggil,
       });
-      print("Status di penerima diperbarui ke 'Panggilan Ditolak'");
 
-      // Tutup dialog panggilan masuk
-      if (_dialogPanggilanAktif) {
-        Navigator.of(context).pop();
-        _dialogPanggilanAktif = false;
-        print("Dialog panggilan ditutup");
+      print("Panggilan dengan saluran $idSaluran ditolak.");
+    } catch (e) {
+      print("Error saat menolak panggilan: $e");
+    }
+  }
+
+// Fungsi untuk mengambil nama pengguna berdasarkan ID pengguna
+  Future<String> _ambilNamaPengguna(String idPengguna) async {
+    try {
+      DatabaseReference referensiPengguna = FirebaseDatabase.instance.ref('pengguna/$idPengguna');
+      final snapshot = await referensiPengguna.get();
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        return data['namaPengguna'] ?? 'Tidak diketahui';
+      } else {
+        return 'Tidak ditemukan';
       }
     } catch (e) {
-      print("Error saat memperbarui status panggilan: $e");
+      print("Error saat mengambil nama pengguna: $e");
+      return 'Tidak ditemukan';
     }
   }
 
@@ -353,17 +370,6 @@ class _LayarBerandaState extends State<LayarBeranda> {
         );
       },
     );
-  }
-
-  Future<String> _ambilNamaPengguna(String idPengguna) async {
-    final ref = FirebaseDatabase.instance.ref('pengguna/$idPengguna');
-    final snapshot = await ref.get();
-    if (snapshot.exists) {
-      final data = snapshot.value as Map<dynamic, dynamic>;
-      return data['namaPengguna'] ?? 'Tidak diketahui';
-    } else {
-      return 'Tidak ditemukan';
-    }
   }
 
   void _muatDataPengguna(String idPengguna) {
