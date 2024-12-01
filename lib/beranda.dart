@@ -732,7 +732,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
                   final avatarUrl = 'https://robohash.org/${panggilan['idPemanggil']}?set=set5';
 
-                  final waktuPanggilan = jamMenit;
+                  final waktuPanggilan = waktu;
 
                   return ListTile(
                     leading: CircleAvatar(
