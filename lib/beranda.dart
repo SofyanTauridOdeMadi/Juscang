@@ -411,11 +411,16 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
   void _muatRiwayatPanggilan() {
     DatabaseReference referensiRiwayat = FirebaseDatabase.instance.ref('pengguna/$idPengguna/riwayatPanggilan');
-    referensiRiwayat.onValue.listen((DatabaseEvent event) async {
+
+    // Query data dan urutkan berdasarkan atribut 'waktu'
+    referensiRiwayat.orderByChild('waktu').onValue.listen((DatabaseEvent event) async {
       final data = event.snapshot.value as Map<dynamic, dynamic>?;
       setState(() {
         riwayatPanggilan.clear();
         if (data != null) {
+          final List<Map<String, dynamic>> riwayat = [];
+
+          // Iterasi data dan masukkan ke dalam daftar sementara
           data.forEach((key, value) async {
             final idPemanggil = value['idPemanggil'] ?? '';
             final idPenerima = value['idPenerima'] ?? '';
@@ -429,8 +434,8 @@ class _LayarBerandaState extends State<LayarBeranda> {
             // Ambil nama pengguna lawan bicara
             String namaLawanBicara = await _ambilNamaPengguna(idLawanBicara);
 
-            // Tambahkan data riwayat dengan nama lawan bicara
-            riwayatPanggilan.add({
+            // Tambahkan data ke daftar sementara
+            riwayat.add({
               'idPemanggil': idPemanggil,
               'idPenerima': idPenerima,
               'status': status,
@@ -438,6 +443,10 @@ class _LayarBerandaState extends State<LayarBeranda> {
               'namaLawanBicara': namaLawanBicara,
             });
           });
+
+          // Setelah iterasi selesai, masukkan daftar riwayat ke dalam state
+          riwayat.sort((a, b) => (b['waktu'] as int).compareTo(a['waktu'] as int)); // Urutkan secara menurun
+          riwayatPanggilan.addAll(riwayat);
         }
       });
     });
