@@ -5,8 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'dart:async';
-import 'Beranda.dart';
-import 'Otentikasi.dart';
+import 'beranda.dart';
+import 'otentikasi.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
+import 'beranda.dart';
 
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
@@ -35,13 +36,13 @@ class _LayarMenelponState extends State<LayarMenelpon> {
   late final RtcEngine _mesinRTC;
   bool _suaraDibisukan = false;
   bool _kameraDimatikan = false;
+  bool _kameraRemoteDimatikan = false;
   bool _penerimaBergabung = false;
   int? _uidLokal;
   int? _uidRemote;
   late String _idSaluran;
   Timer? _timerTimeout;
   Timer? _penghitungDurasi;
-  Offset _previewPosition = Offset(16, 16); // Posisi default preview
   int _durasiPanggilan = 0;
   final AudioPlayer _pemutarAudio = AudioPlayer();
 
@@ -75,7 +76,6 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           setState(() {
             _uidLokal = connection.localUid;
           });
-          print("onJoinChannelSuccess: UID Lokal = ${connection.localUid}");
         },
         onUserJoined: (RtcConnection connection, int uid, int elapsed) {
           setState(() {
@@ -83,7 +83,6 @@ class _LayarMenelponState extends State<LayarMenelpon> {
             _penerimaBergabung = true;
           });
           _pemutarAudio.stop();
-          print("onUserJoined: UID Remote = $uid");
           _mulaiPenghitungDurasi();
           _perbaruiStatus("Dalam Panggilan");
         },
@@ -92,7 +91,18 @@ class _LayarMenelponState extends State<LayarMenelpon> {
             _penerimaBergabung = false;
             _uidRemote = null;
           });
-          print("onUserOffline: UID Remote = $uid");
+        },
+        onUserMuteVideo: (RtcConnection connection, int uid, bool muted) {
+          if (uid == _uidRemote) {
+            setState(() {
+              _kameraRemoteDimatikan = muted;
+            });
+            if (!muted) {
+              _tampilkanBanner("Pengguna menyalakan kamera");
+            } else {
+              _tampilkanBanner("Pengguna mematikan kamera");
+            }
+          }
         },
       ),
     );
@@ -149,6 +159,35 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     });
   }
 
+  void _tampilkanBanner(String pesan) {
+    ScaffoldMessenger.of(context).showMaterialBanner(
+      MaterialBanner(
+        content: Text(
+          pesan,
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: warnaUtama,
+        actions: [
+          TextButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+            },
+            child: Text(
+              "Tutup",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Future.delayed(Duration(seconds: 3), () {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+      }
+    });
+  }
+
   void _akhiriPanggilan(String pesan) {
     _perbaruiStatus("Panggilan Berakhir");
     _penghitungDurasi?.cancel();
@@ -156,18 +195,15 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     _mesinRTC.leaveChannel();
     _mesinRTC.release();
 
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
-    if (pesan.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(pesan, style: TextStyle(color: Colors.white)),
-          backgroundColor: warnaUtama,
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LayarBeranda()));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(pesan, style: TextStyle(color: Colors.white)),
+        backgroundColor: warnaUtama,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -177,14 +213,41 @@ class _LayarMenelponState extends State<LayarMenelpon> {
         children: [
           // Video penerima atau avatar penerima
           Positioned.fill(
-            child: _uidRemote != null && _penerimaBergabung
-                ? AgoraVideoView(
-              controller: VideoViewController.remote(
-                rtcEngine: _mesinRTC,
-                canvas: VideoCanvas(uid: _uidRemote!),
-                connection: RtcConnection(channelId: _idSaluran),
+            child: _penerimaBergabung
+                ? (_kameraRemoteDimatikan
+                ? Container(
+              color: Colors.white,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundImage: NetworkImage(
+                        widget.avatarPengguna ?? 'https://robohash.org/defaultset=set5',
+                      ),
+                      backgroundColor: warnaSekunder,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      widget.namaPengguna,
+                      style: TextStyle(
+                        color: warnaUtama,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
+                : AgoraVideoView(
+              controller: VideoViewController.remote(
+                rtcEngine: _mesinRTC,
+                canvas: VideoCanvas(uid: _uidRemote ?? 0),
+                connection: RtcConnection(channelId: _idSaluran),
+              ),
+            ))
                 : Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -192,7 +255,7 @@ class _LayarMenelponState extends State<LayarMenelpon> {
                   CircleAvatar(
                     radius: 50,
                     backgroundImage: NetworkImage(
-                      widget.avatarPengguna ?? 'https://robohash.org/default',
+                      widget.avatarPengguna ?? 'https://robohash.org/defaultset=set5',
                     ),
                     backgroundColor: warnaSekunder,
                   ),
@@ -206,37 +269,6 @@ class _LayarMenelponState extends State<LayarMenelpon> {
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          // Video lokal (pemanggil) kecil yang bisa dipindahkan
-          AnimatedPositioned(
-            duration: Duration(milliseconds: 300),
-            left: _previewPosition.dx,
-            top: _previewPosition.dy,
-            child: GestureDetector(
-              onPanUpdate: (details) {
-                setState(() {
-                  _previewPosition += details.delta;
-                });
-              },
-              child: SizedBox(
-                width: 100,
-                height: 150,
-                child: _kameraDimatikan
-                    ? CircleAvatar(
-                  radius: 50,
-                  backgroundImage: NetworkImage(
-                    widget.avatarPengguna ?? 'https://robohash.org/default',
-                  ),
-                  backgroundColor: warnaSekunder,
-                )
-                    : AgoraVideoView(
-                  controller: VideoViewController(
-                    rtcEngine: _mesinRTC,
-                    canvas: VideoCanvas(uid: _uidLokal ?? 0),
-                  ),
-                ),
               ),
             ),
           ),

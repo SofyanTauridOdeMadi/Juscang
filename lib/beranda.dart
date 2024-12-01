@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'Menelpon.dart';
+import 'menelpon.dart';
 import 'main.dart';
 import 'utils.dart';
 
@@ -75,16 +75,14 @@ class _LayarBerandaState extends State<LayarBeranda> {
   }
 
   Future<void> logoutPengguna(BuildContext context) async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => AplikasiSaya()),
-      );
-    } catch (e) {
-      print("Kesalahan saat logout: $e");
-    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    await FirebaseAuth.instance.signOut(); // Pastikan logout selesai
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => AplikasiSaya()),
+          (Route<dynamic> route) => false, // Menghapus semua rute sebelumnya
+    );
   }
 
   Future<void> _ambilIdPengguna() async {
@@ -117,7 +115,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
                   'idPengguna': id,
                   'namaPengguna': nilai['namaPengguna'] ?? 'Tidak diketahui',
                   'statusPengguna': nilai['statusPengguna'] ?? '',
-                  'avatar': 'https://robohash.org/$id?set=set1', // Avatar menggunakan Robohash
+                  'avatar': 'https://robohash.org/$id?set=set5', // Avatar menggunakan Robohash
                 });
               }
             });
@@ -594,7 +592,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
             idPenerima: idPenerima,
             idPanggilan: _idPanggilan!,
             namaPengguna: namaPenerima,
-            avatarPengguna: 'https://robohash.org/$idPenerima?set=set1',
+            avatarPengguna: 'https://robohash.org/$idPenerima?set=set5',
           ),
         ),
       );
@@ -708,7 +706,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
                   final status = panggilan['status'] ?? 'unknown';
                   final waktu = panggilan['waktu'] ?? 0;
 
-                  final avatarUrl = 'https://robohash.org/${panggilan['idPemanggil']}?set=set1';
+                  final avatarUrl = 'https://robohash.org/${panggilan['idPemanggil']}?set=set5';
 
                   final waktuPanggilan = DateTime.fromMillisecondsSinceEpoch(waktu);
                   final waktuFormat = '${waktuPanggilan.hour.toString().padLeft(2, '0')}:${waktuPanggilan.minute.toString().padLeft(2, '0')}';
@@ -772,7 +770,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
     TextEditingController namaController = TextEditingController(text: namaPengguna);
     TextEditingController statusController = TextEditingController(text: statusPengguna);
 
-    final avatarUrl = 'https://robohash.org/$idPengguna?set=set1';
+    final avatarUrl = 'https://robohash.org/$idPengguna?set=set5';
 
     showDialog(
       context: context,
