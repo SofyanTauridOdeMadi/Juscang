@@ -3,7 +3,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
-import 'beranda.dart';
 
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
@@ -195,7 +194,9 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     _mesinRTC.leaveChannel();
     _mesinRTC.release();
 
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LayarBeranda()));
+    Navigator.popUntil(context, (route) {
+      return route.isFirst; // Kembali ke halaman sebelumnya yang tersisa di stack.
+    });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

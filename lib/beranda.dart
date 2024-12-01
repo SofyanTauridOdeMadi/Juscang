@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -321,8 +323,18 @@ class _LayarBerandaState extends State<LayarBeranda> {
     }
 
     _dialogPanggilanAktif = true; // Tandai bahwa dialog aktif
-
     String namaPemanggil = data['namaPemanggil'] ?? await _ambilNamaPengguna(data['idPemanggil']);
+
+    // Timer untuk menutup dialog secara otomatis setelah 10 detik
+    Timer timer = Timer(Duration(seconds: 10), () {
+      if (_dialogPanggilanAktif) {
+        Navigator.of(context).pop();
+        _dialogPanggilanAktif = false; // Reset flag
+        print("Dialog panggilan otomatis ditutup setelah 10 detik.");
+        tolakPanggilan(data['idSaluran'], data['idPemanggil'], idPengguna!); // Anggap panggilan ditolak
+      }
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -333,6 +345,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
           actions: [
             TextButton(
               onPressed: () {
+                timer.cancel(); // Hentikan timer jika pengguna menolak
                 Navigator.of(context).pop();
                 _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
                 tolakPanggilan(data['idSaluran'], data['idPemanggil'], idPengguna!);
@@ -341,6 +354,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
             ),
             ElevatedButton(
               onPressed: () {
+                timer.cancel(); // Hentikan timer jika pengguna menerima panggilan
                 Navigator.of(context).pop();
                 _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
                 _terimaPanggilan(data['idSaluran'], data['idPemanggil']);
@@ -351,7 +365,13 @@ class _LayarBerandaState extends State<LayarBeranda> {
           ],
         );
       },
-    );
+    ).then((_) {
+      // Pastikan timer dihentikan ketika dialog ditutup
+      if (timer.isActive) {
+        timer.cancel();
+      }
+      _dialogPanggilanAktif = false; // Reset flag
+    });
   }
 
   Future<String> _ambilNamaPengguna(String idPengguna) async {

@@ -1,6 +1,6 @@
 name: Juscang
 description: "Layanan Komunikasi Telepon Antar Perangkat"
-version: 1.9.5+1
+version: 2.1.5+1
 
 environment:
   sdk: ^3.5.4
