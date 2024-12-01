@@ -7,6 +7,7 @@ import 'beranda.dart';
 
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
+String jamMenit = "${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}";
 
 class LayarMenelpon extends StatefulWidget {
   final String idPengguna;
@@ -60,15 +61,16 @@ class _LayarMenelponState extends State<LayarMenelpon> {
 
   // Fungsi untuk mendengarkan perubahan status di Firebase
   void _setupStatusListener() {
-    final referensiPanggilan = FirebaseDatabase.instance
+    final referensiPemanggil = FirebaseDatabase.instance
         .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}');
+    final referensiPenerima = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}');
 
-    referensiPanggilan.onValue.listen((event) {
-      final data = event.snapshot.value as Map<dynamic, dynamic>?;
-
+    void _prosesPembaruan(DataSnapshot snapshot, String pengguna) {
+      final data = snapshot.value as Map<dynamic, dynamic>?;
       if (data != null) {
         final status = data['status'] ?? '';
-        print("Status diperbarui: $status");
+        print("Status diperbarui oleh $pengguna: $status");
 
         if (status == "Panggilan Ditolak") {
           _akhiriPanggilan("Panggilan Ditolak oleh penerima.");
@@ -76,6 +78,14 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           _akhiriPanggilan("Panggilan berakhir.");
         }
       }
+    }
+
+    referensiPemanggil.onValue.listen((event) {
+      _prosesPembaruan(event.snapshot, "Pemanggil");
+    });
+
+    referensiPenerima.onValue.listen((event) {
+      _prosesPembaruan(event.snapshot, "Penerima");
     });
   }
 
@@ -190,14 +200,14 @@ class _LayarMenelponState extends State<LayarMenelpon> {
         .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}');
     referensiPemanggil.update({
       'status': status,
-      'waktu': DateTime.now().millisecondsSinceEpoch,
+      'waktu': jamMenit,
     });
 
     final referensiPenerima = FirebaseDatabase.instance
         .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}');
     referensiPenerima.update({
       'status': status,
-      'waktu': DateTime.now().millisecondsSinceEpoch,
+      'waktu': jamMenit,
     });
   }
 

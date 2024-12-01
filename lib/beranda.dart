@@ -12,6 +12,7 @@ import 'utils.dart';
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
 const Color warnaTeksHitam = Color(0xFF0F0F0F);
+String jamMenit = "${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}";
 
 
 class LayarBeranda extends StatefulWidget {
@@ -171,14 +172,14 @@ class _LayarBerandaState extends State<LayarBeranda> {
     database.child("pengguna/$idPemanggil/riwayatPanggilan/$idSaluran").set({
       'idPenerima': idPenerima,
       'status': status,
-      'waktu': DateTime.now().millisecondsSinceEpoch,
+      'waktu': jamMenit,
     });
 
     // Simpan riwayat panggilan penerima
     database.child("pengguna/$idPenerima/riwayatPanggilan/$idSaluran").set({
       'idPemanggil': idPemanggil,
       'status': status,
-      'waktu': DateTime.now().millisecondsSinceEpoch,
+      'waktu': jamMenit,
     });
   }
 
@@ -290,23 +291,29 @@ class _LayarBerandaState extends State<LayarBeranda> {
     }
   }
 
-  void _terimaPanggilan(String idSaluran, String idPemanggil) async {
+  void _terimaPanggilan(String idSaluran, String idPemanggil, String idPenerima) async {
     try {
       // Ambil nama pemanggil dari Firebase
       final DataSnapshot snapshotPemanggil = await FirebaseDatabase.instance
           .ref('pengguna/$idPemanggil/namaPengguna')
           .get();
 
-      String namaPemanggil = snapshotPemanggil.exists
-          ? snapshotPemanggil.value.toString()
-          : 'Nama Tidak Diketahui';
+      // Validasi data pemanggil
+      String namaPemanggil = 'Nama Tidak Diketahui';
+      if (snapshotPemanggil.exists) {
+        namaPemanggil = snapshotPemanggil.value.toString();
+      } else {
+        print("Nama pemanggil tidak ditemukan di Firebase.");
+      }
 
-      // Simpan status "Panggilan Diterima" ke Firebase
-      final referensiRiwayat = FirebaseDatabase.instance
-          .ref('pengguna/$idPengguna/riwayatPanggilan/$idSaluran');
-      await referensiRiwayat.update({
-        'status': 'Panggilan Diterima',
-      });
+      // Perbarui status panggilan di Firebase
+      await FirebaseDatabase.instance
+          .ref('pengguna/$idPemanggil/riwayatPanggilan/$idSaluran')
+          .update({'status': 'Panggilan Diterima'});
+
+      await FirebaseDatabase.instance
+          .ref('pengguna/$idPenerima/riwayatPanggilan/$idSaluran')
+          .update({'status': 'Panggilan Diterima'});
 
       // Reset flag dialog saat berpindah layar
       _dialogPanggilanAktif = false;
@@ -316,10 +323,10 @@ class _LayarBerandaState extends State<LayarBeranda> {
         context,
         MaterialPageRoute(
           builder: (context) => LayarMenelpon(
-            idPengguna: idPengguna!, // ID lokal pengguna
+            idPengguna: idPenerima, // ID lokal pengguna (sebagai penerima)
             idSaluran: idSaluran,   // Saluran Agora
             idPemanggil: idPemanggil, // ID pemanggil
-            idPenerima: idPengguna!, // ID penerima
+            idPenerima: idPenerima, // ID penerima
             idPanggilan: idSaluran, // ID panggilan (bisa sama dengan saluran)
             namaPengguna: namaPemanggil, // Nama dinamis dari pemanggil
             avatarPengguna: null, // Tambahkan avatar jika tersedia
@@ -340,6 +347,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
     _dialogPanggilanAktif = true; // Tandai bahwa dialog aktif
     String namaPemanggil = data['namaPemanggil'] ?? await _ambilNamaPengguna(data['idPemanggil']);
+    String idPenerima = idPengguna!; // Asumsikan idPengguna lokal adalah penerima
 
     // Tampilkan dialog
     showDialog(
@@ -362,7 +370,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
               onPressed: () {
                 Navigator.of(context).pop();
                 _dialogPanggilanAktif = false; // Reset flag setelah dialog ditutup
-                _terimaPanggilan(data['idSaluran'], data['idPemanggil']);
+                _terimaPanggilan(data['idSaluran'], data['idPemanggil'], idPenerima);
               },
               style: ElevatedButton.styleFrom(backgroundColor: warnaUtama),
               child: Text('Terima', style: TextStyle(color: Colors.white)),
@@ -553,8 +561,8 @@ class _LayarBerandaState extends State<LayarBeranda> {
       String namaPenerima = await _ambilNamaPengguna(idPenerima);
 
       // Buat idSaluran unik
-      String idSaluran = "$idPengguna-$idPenerima-${DateTime.now().millisecondsSinceEpoch}";
-      _idPanggilan = "$idPengguna-$idPenerima-${DateTime.now().millisecondsSinceEpoch}";
+      String idSaluran = "$idPengguna-$idPenerima-$jamMenit";
+      _idPanggilan = "$idPengguna-$idPenerima-$jamMenit";
 
       // Simpan riwayat panggilan untuk pemanggil
       final referensiRiwayatPemanggil = FirebaseDatabase.instance
@@ -565,7 +573,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
         'idPenerima': idPenerima,
         'namaPenerima': namaPenerima, // Nama penerima
         'status': 'Menghubungkan Panggilan',
-        'waktu': DateTime.now().millisecondsSinceEpoch,
+        'waktu': jamMenit,
         'idSaluran': idSaluran,
       });
 
@@ -578,7 +586,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
         'idPenerima': idPenerima,
         'namaPenerima': namaPenerima, // Nama penerima
         'status': 'Menghubungkan Panggilan',
-        'waktu': DateTime.now().millisecondsSinceEpoch,
+        'waktu': jamMenit,
         'idSaluran': idSaluran,
       });
 
@@ -724,8 +732,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
 
                   final avatarUrl = 'https://robohash.org/${panggilan['idPemanggil']}?set=set5';
 
-                  final waktuPanggilan = DateTime.fromMillisecondsSinceEpoch(waktu);
-                  final waktuFormat = '${waktuPanggilan.hour.toString().padLeft(2, '0')}:${waktuPanggilan.minute.toString().padLeft(2, '0')}';
+                  final waktuPanggilan = jamMenit;
 
                   return ListTile(
                     leading: CircleAvatar(
@@ -741,7 +748,7 @@ class _LayarBerandaState extends State<LayarBeranda> {
                       ),
                     ),
                     subtitle: Text(
-                      '$status. $waktuFormat',
+                      '$status. $waktuPanggilan',
                       style: TextStyle(
                         color: warnaTeksHitam.withOpacity(0.6),
                         fontFamily: 'Poppins',
