@@ -7,8 +7,6 @@
 ## 🚀 **Fitur Utama**
 - **📞 Panggilan Suara & Video Berkualitas Tinggi**  
   Nikmati komunikasi suara dan video dengan kualitas terbaik.
-- **💬 Pesan Teks Real-Time**  
-  Kirim dan terima pesan teks dengan cepat dan aman.
 - **🔔 Notifikasi Push**  
   Dapatkan notifikasi instan untuk panggilan dan pesan masuk.
 - **🕒 Riwayat Panggilan**  
@@ -25,7 +23,7 @@
   Framework lintas platform untuk Android dan iOS.
 - **Firebase Suite**:
     - **Authentication**: Login dan registrasi pengguna.
-    - **Realtime Database**: Penyimpanan data pengguna, pesan, dan riwayat panggilan secara real-time.
+    - **Realtime Database**: Penyimpanan data pengguna dan riwayat panggilan secara real-time.
     - **Cloud Messaging (FCM)**: Notifikasi push kepada pengguna.
 - **Agora SDK**  
   Untuk panggilan suara dan video berkualitas tinggi.
@@ -35,11 +33,16 @@
 ---
 
 ## 📂 **Struktur Folder**
-1. /lib                      # Kode sumber untuk UI, logika bisnis, dan layanan backend
-2. /android                  # Konfigurasi proyek Android
-3. /ios                      # Konfigurasi proyek iOS
-4. /assets                   # Aset statis (gambar, ikon, dll.)
-5. /firebase-messaging-sw.js # Service worker untuk notifikasi push di web
+1. /lib
+Kode sumber untuk UI, logika bisnis, dan layanan backend
+2. /android
+Konfigurasi proyek Android
+3. /ios
+Konfigurasi proyek iOS
+4. /assets
+Aset statis (gambar, ikon, dll.)
+5. /firebase-messaging-sw.js
+Service worker untuk notifikasi push di web
 
 ---
 
@@ -48,9 +51,7 @@
    Daftar menggunakan email atau akun sosial Anda melalui Firebase Authentication.
 2. **Melakukan Panggilan**  
    Mulai panggilan suara atau video dengan pengguna lain.
-3. **Mengirim Pesan**  
-   Bertukar pesan teks secara real-time.
-4. **Menerima Notifikasi**  
+3. **Menerima Notifikasi**  
    Dapatkan pemberitahuan untuk pesan dan panggilan masuk secara instan.
 
 ---
@@ -68,7 +69,7 @@
 - [x] Menambahkan navigasi antar halaman
 - [x] Integrasi Firebase Authentication
 - [x] Menambahkan validasi form login dan registrasi
-- [ ] Implementasi fitur panggilan suara menggunakan API
+- [x] Implementasi fitur panggilan suara menggunakan API
 - [x] Desain UI untuk layar panggilan
 - [ ] Penanganan error saat panggilan gagal
 
@@ -81,9 +82,9 @@
 ### **Tahap Akhir**
 - [ ] Testing dan Debugging
 - [ ] Testing unit untuk setiap fitur
-- [ ] Debugging dan optimasi performa
+- [x] Debugging dan optimasi performa
 - [ ] Mengoptimalkan ukuran APK/AAB
-- [ ] Testing di berbagai perangkat
+- [x] Testing di berbagai perangkat
 
 ---
 
