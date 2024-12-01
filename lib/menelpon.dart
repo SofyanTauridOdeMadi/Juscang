@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
+import 'beranda.dart';
 
 const Color warnaUtama = Color(0xFF690909);
 const Color warnaSekunder = Color(0xFF873A3A);
@@ -52,6 +53,30 @@ class _LayarMenelponState extends State<LayarMenelpon> {
     _inisialisasiAgora();
     _aturTimerTimeout();
     _perbaruiStatus("Memulai Panggilan");
+
+    // Tambahkan listener untuk mendeteksi perubahan status panggilan
+    _setupStatusListener();
+  }
+
+  // Fungsi untuk mendengarkan perubahan status di Firebase
+  void _setupStatusListener() {
+    final referensiPanggilan = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}');
+
+    referensiPanggilan.onValue.listen((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+      if (data != null) {
+        final status = data['status'] ?? '';
+        print("Status diperbarui: $status");
+
+        if (status == "Panggilan Ditolak") {
+          _akhiriPanggilan("Panggilan Ditolak oleh penerima.");
+        } else if (status == "Panggilan Berakhir") {
+          _akhiriPanggilan("Panggilan berakhir.");
+        }
+      }
+    });
   }
 
   Future<void> _putarSuaraMenunggu() async {
@@ -86,10 +111,19 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           _perbaruiStatus("Dalam Panggilan");
         },
         onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
-          setState(() {
-            _penerimaBergabung = false;
-            _uidRemote = null;
-          });
+          if (uid == _uidRemote) {
+            setState(() {
+              _penerimaBergabung = false;
+              _uidRemote = null;
+            });
+
+            // Akhiri panggilan jika pengguna lain meninggalkan saluran
+            if (reason == UserOfflineReasonType.userOfflineQuit) {
+              _akhiriPanggilan("Pengguna meninggalkan panggilan.");
+            } else {
+              _akhiriPanggilan("Koneksi Terputus.");
+            }
+          }
         },
         onUserMuteVideo: (RtcConnection connection, int uid, bool muted) {
           if (uid == _uidRemote) {
@@ -188,16 +222,18 @@ class _LayarMenelponState extends State<LayarMenelpon> {
   }
 
   void _akhiriPanggilan(String pesan) {
-    _perbaruiStatus("Panggilan Berakhir");
+    // Hentikan semua timer dan keluarkan pengguna dari saluran
     _penghitungDurasi?.cancel();
     _timerTimeout?.cancel();
     _mesinRTC.leaveChannel();
     _mesinRTC.release();
 
-    Navigator.popUntil(context, (route) {
-      return route.isFirst; // Kembali ke halaman sebelumnya yang tersisa di stack.
-    });
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LayarBeranda()),
+          (Route<dynamic> route) => false, // Menghapus semua layar sebelumnya
+    );
 
+    // Tampilkan pesan SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(pesan, style: TextStyle(color: Colors.white)),
