@@ -260,6 +260,22 @@ class _LayarMenelponState extends State<LayarMenelpon> {
         duration: Duration(seconds: 3),
       ),
     );
+
+    // Perbarui status di Firebase
+    final referensiPemanggil = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPemanggil}/riwayatPanggilan/${widget.idPanggilan}');
+    final referensiPenerima = FirebaseDatabase.instance
+        .ref('pengguna/${widget.idPenerima}/riwayatPanggilan/${widget.idPanggilan}');
+
+    referensiPemanggil.update({
+      'status': 'Panggilan Berakhir',
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
+
+    referensiPenerima.update({
+      'status': 'Panggilan Berakhir',
+      'waktu': DateTime.now().millisecondsSinceEpoch,
+    });
   }
 
   @override
