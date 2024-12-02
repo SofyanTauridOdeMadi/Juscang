@@ -74,7 +74,7 @@ Service worker untuk notifikasi push di web
 - [x] Menambahkan validasi form login dan registrasi
 - [x] Implementasi fitur panggilan suara menggunakan API
 - [x] Desain UI untuk layar panggilan
-- [ ] Penanganan error saat panggilan gagal
+- [x] Penanganan error saat panggilan gagal
 
 ### **Fitur Tambahan**
 - [x] Membuat layar SplashScreen
@@ -83,10 +83,10 @@ Service worker untuk notifikasi push di web
 - [x] Konfigurasi database Firebase untuk menyimpan data pengguna
 
 ### **Tahap Akhir**
-- [ ] Testing dan Debugging
-- [ ] Testing unit untuk setiap fitur
+- [x] Testing dan Debugging
+- [x] Testing unit untuk setiap fitur
 - [x] Debugging dan optimasi performa
-- [ ] Mengoptimalkan ukuran APK/AAB
+- [x] Mengoptimalkan ukuran APK/AAB
 - [x] Testing di berbagai perangkat
 
 ---

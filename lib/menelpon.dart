@@ -120,7 +120,7 @@ class _LayarMenelponState extends State<LayarMenelpon> {
           print("Pengguna lain bergabung ke saluran dengan UID: $uid");
           _pemutarAudio.stop();
           _mulaiPenghitungDurasi();
-          _perbaruiStatus("Dalam Panggilan");
+          _perbaruiStatus("Panggilan Berakhir");
         },
         onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
           print("Pengguna lain meninggalkan saluran dengan UID: $uid, alasan: $reason");
